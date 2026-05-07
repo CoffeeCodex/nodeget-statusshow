@@ -81,6 +81,8 @@ export interface LatencyStats {
   avg: number | null
   jitter: number | null
   lossRate: number
+  latest: number | null
+  probes: (number | null)[]
 }
 
 export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType): LatencyStats[] {
@@ -93,16 +95,28 @@ export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType):
     }
 
     const color = latencyColor(name)
+    const probes = list
+      .slice()
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .slice(-100)
+      .map(r => pickValue(r, type))
     const lossRate = list.length ? ((list.length - vals.length) / list.length) * 100 : 0
-    if (!vals.length) return { name, color, avg: null, jitter: null, lossRate }
+    if (!vals.length) return { name, color, avg: null, jitter: null, lossRate, latest: null, probes }
 
     const avg = vals.reduce((s, v) => s + v, 0) / vals.length
     const jitter =
       vals.length >= 2
         ? vals.slice(1).reduce((s, v, i) => s + Math.abs(v - vals[i]), 0) / (vals.length - 1)
         : null
+    let latest: number | null = null
+    for (let i = probes.length - 1; i >= 0; i--) {
+      if (probes[i] != null) {
+        latest = probes[i]
+        break
+      }
+    }
 
-    return { name, color, avg, jitter, lossRate }
+    return { name, color, avg, jitter, lossRate, latest, probes }
   })
 
   return stats.sort((a, b) => {

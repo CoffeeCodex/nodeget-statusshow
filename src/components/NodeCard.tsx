@@ -1,122 +1,190 @@
-import { ArrowDown, ArrowUp, Clock, type LucideIcon } from 'lucide-react'
-import { Badge } from './ui/badge'
-import { Card } from './ui/card'
-import { Progress } from './ui/progress'
+import { ArrowDown, ArrowUp, Clock } from 'lucide-react'
 import { Flag } from './Flag'
 import { StatusDot } from './StatusDot'
-import { bytes, pct, relativeAge, uptime } from '../utils/format'
+import { bytes, pct, uptime } from '../utils/format'
 import { cpuLabel, deriveUsage, displayName, distroLogo, osLabel, virtLabel } from '../utils/derive'
-import { cn, loadColor } from '../utils/cn'
+import { cn } from '../utils/cn'
 import type { Node } from '../types'
-import type { ReactNode } from 'react'
+import type { LatencyStats } from '../utils/latency'
 
-export function NodeCard({ node }: { node: Node }) {
+interface Props {
+  node: Node
+  tcpStats?: LatencyStats[]
+}
+
+export function NodeCard({ node, tcpStats = [] }: Props) {
   const u = deriveUsage(node)
-  const tags = Array.isArray(node.meta?.tags) ? node.meta.tags : []
   const os = osLabel(node)
   const logo = distroLogo(node)
   const virt = virtLabel(node)
   const cpu = cpuLabel(node)
+  const provider = node.source || node.meta?.region || ''
 
   return (
-      <a href={`#${encodeURIComponent(node.uuid)}`} className="block">
-        <Card
-            className={cn(
-                'p-4 transition hover:border-primary/50 hover:shadow-md flex flex-col gap-3',
-                !node.online && 'opacity-60',
-            )}
-        >
-          <div className="flex items-center gap-2">
-            <StatusDot online={node.online} />
-            {logo && (
-                <img src={logo} alt="" className="w-5 h-5 shrink-0 object-contain" loading="lazy" />
-            )}
-            <span className="font-semibold flex-1 min-w-0 truncate" title={displayName(node)}>
-            {displayName(node)}
-          </span>
-            <Flag code={node.meta?.region} className="shrink-0" />
-          </div>
-
-          {(os || virt) && (
-              <div className="font-mono text-xs text-muted-foreground truncate">
-                {[os, virt].filter(Boolean).join(' · ')}
-              </div>
-          )}
-
-          <div className="flex flex-col gap-2.5">
-            <Metric label="CPU" value={u.cpu} sub={cpu || null} subTitle={cpu || undefined} />
-            <Metric
-                label="内存"
-                value={u.mem}
-                sub={u.memTotal ? `${bytes(u.memUsed)} / ${bytes(u.memTotal)}` : null}
-            />
-            <Metric
-                label="磁盘"
-                value={u.disk}
-                sub={u.diskTotal ? `${bytes(u.diskUsed)} / ${bytes(u.diskTotal)}` : null}
-            />
-          </div>
-
-          <div className="pt-2.5 border-t border-dashed font-mono text-xs text-muted-foreground space-y-1.5">
-            <div className="flex items-center gap-3">
-              <Stat icon={ArrowDown}>{bytes(u.netIn || 0)}/s</Stat>
-              <Stat icon={ArrowUp}>{bytes(u.netOut || 0)}/s</Stat>
-            </div>
-            <div className="flex items-center gap-3">
-              <Stat icon={Clock}>{uptime(u.uptime)}</Stat>
-              <span className="ml-auto">{relativeAge(u.ts)}</span>
-            </div>
-          </div>
-
-          {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map(t => (
-                    <Badge key={t} variant="outline" className="text-[10px]">
-                      {t}
-                    </Badge>
-                ))}
-              </div>
-          )}
-        </Card>
-      </a>
-  )
-}
-
-function Stat({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
-  return (
-      <span className="inline-flex items-center gap-1">
-      <Icon className="h-3 w-3" />
-        {children}
-    </span>
-  )
-}
-
-function Metric({
-                  label,
-                  value,
-                  sub,
-                  subTitle,
-                }: {
-  label: string
-  value: number | undefined
-  sub?: string | null
-  subTitle?: string
-}) {
-  return (
-      <div className="min-w-0">
-        <div className="flex justify-between text-xs">
-          <span className="text-muted-foreground">{label}</span>
-          <span className="font-mono">{pct(value)}</span>
-        </div>
-        <Progress value={value} indicatorClassName={loadColor(value)} className="mt-1 h-1.5" />
-        {sub && (
-            <div
-                className="font-mono text-[11px] text-muted-foreground mt-1 truncate"
-                title={subTitle}
-            >
-              {sub}
-            </div>
+    <a href={`#${encodeURIComponent(node.uuid)}`} className="block group">
+      <article
+        className={cn(
+          'rounded-[20px] border border-white/[0.075] bg-[#10131a] p-[18px] shadow-[0_20px_70px_rgba(0,0,0,0.38)] transition duration-200',
+          'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.018))]',
+          'hover:border-sky-300/25 hover:-translate-y-0.5',
+          node.online ? 'hover:shadow-[0_22px_78px_rgba(0,0,0,0.42)]' : 'opacity-70',
         )}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[14px] border border-white/[0.075] bg-[#0a0d13]">
+            {logo ? <img src={logo} alt="" className="h-7 w-7 object-contain" loading="lazy" /> : <StatusDot online={node.online} />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[18px] font-[760] tracking-[-0.03em]" title={displayName(node)}>
+              {displayName(node)}
+            </div>
+            <div className="mt-0.5 text-xs font-semibold text-slate-400">{virt || '—'}</div>
+          </div>
+          <Flag code={node.meta?.region} className="h-4 w-6 shrink-0 rounded-[2px]" />
+        </div>
+
+        <div className="mt-[15px] rounded-[14px] border border-white/[0.075] bg-black/15 p-3 text-[13px] leading-snug text-slate-200">
+          <div className="truncate">{os || 'Unknown system'}</div>
+          <div className="mt-1 truncate text-slate-400" title={cpu || undefined}>{cpu || 'Unknown CPU'}</div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-[9px]">
+          <UsageBlock label="CPU" value={u.cpu} hot />
+          <UsageBlock label="MEM" value={u.mem} />
+          <UsageBlock label="DISK" value={u.disk} />
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <NetBox dir="down" value={`${bytes(u.netIn || 0)}/s`} />
+          <NetBox dir="up" value={`${bytes(u.netOut || 0)}/s`} />
+        </div>
+
+        <TcpBlock stats={tcpStats} />
+
+        <div className="mt-3">
+          <div className="mb-1.5 flex items-center justify-between text-xs text-slate-400">
+            <span>24h 在线</span>
+            <span className="font-mono text-slate-200">{node.online ? '100%' : '—'}</span>
+          </div>
+          <HistoryStrip online={node.online} history={node.history} />
+        </div>
+
+        <div className="mt-3.5 flex items-center gap-2.5 text-xs text-slate-400">
+          <span className="truncate text-slate-300">{provider}</span>
+          <span className="ml-auto inline-flex items-center gap-1 font-mono">
+            <Clock className="h-3 w-3" />
+            {uptime(u.uptime)}
+          </span>
+          <span className={cn('text-[11px] font-black tracking-[0.11em]', node.online ? 'text-emerald-400' : 'text-rose-400')}>
+            {node.online ? 'ONLINE' : 'OFFLINE'}
+          </span>
+        </div>
+      </article>
+    </a>
+  )
+}
+
+function UsageBlock({ label, value, hot }: { label: string; value?: number; hot?: boolean }) {
+  const safe = value != null && Number.isFinite(value) ? value : null
+  const capped = Math.max(0, Math.min(100, safe ?? 0))
+  const filled = safe == null ? 0 : Math.ceil(capped / 5)
+  return (
+    <div className="min-w-0 rounded-[14px] border border-white/[0.075] bg-white/[0.025] p-2.5">
+      <div className="mb-2 flex items-baseline justify-between gap-1.5">
+        <span className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-400">{label}</span>
+        <span className={cn('font-mono text-[13px] font-bold', hot && safe != null && safe >= 90 ? 'text-rose-400' : 'text-cyan-300')}>
+          {pct(safe)}
+        </span>
       </div>
+      <div className="grid h-[18px] grid-cols-[repeat(20,minmax(0,1fr))] gap-0.5 overflow-hidden">
+        {Array.from({ length: 20 }, (_, i) => (
+          <span
+            key={i}
+            className={cn(
+              'rounded-[2px] bg-white/[0.065]',
+              i < filled && (hot && safe != null && safe >= 90 ? 'bg-gradient-to-b from-yellow-300 via-orange-400 to-red-500' : 'bg-gradient-to-b from-cyan-300 to-cyan-700'),
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function NetBox({ dir, value }: { dir: 'down' | 'up'; value: string }) {
+  const Icon = dir === 'down' ? ArrowDown : ArrowUp
+  return (
+    <div className="rounded-[14px] border border-white/[0.075] bg-white/[0.024] p-3">
+      <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-400">
+        <Icon className="h-3 w-3" />
+        {dir === 'down' ? 'DOWN' : 'UP'}
+      </div>
+      <div className="mt-1 font-mono text-[17px] font-bold">{value}</div>
+    </div>
+  )
+}
+
+function TcpBlock({ stats }: { stats: LatencyStats[] }) {
+  const rows = stats.length ? stats : []
+  return (
+    <div className="mt-3 rounded-2xl border border-white/[0.075] bg-black/15 p-[13px]">
+      <div className="mb-2.5 flex items-center justify-between">
+        <div className="text-xs font-black uppercase tracking-[0.1em] text-blue-100">TCPing</div>
+        <div className="text-[10px] font-black tracking-[0.13em] text-emerald-400">LIVE</div>
+      </div>
+      {rows.length ? (
+        rows.map(row => <TcpRow key={row.name} stat={row} />)
+      ) : (
+        <div className="py-2 text-xs text-slate-500">暂无 TCPing 数据</div>
+      )}
+    </div>
+  )
+}
+
+function TcpRow({ stat }: { stat: LatencyStats }) {
+  const latest = stat.latest ?? stat.avg
+  const tone = latencyTone(latest)
+  return (
+    <div className="my-2 grid grid-cols-[38px_1fr_56px_32px] items-center gap-2">
+      <div className="truncate text-xs font-semibold text-slate-300" title={stat.name}>{stat.name}</div>
+      <div className="grid h-4 grid-cols-[repeat(100,minmax(0,1fr))] gap-px overflow-hidden">
+        {Array.from({ length: 100 }, (_, i) => {
+          const offset = Math.max(0, 100 - stat.probes.length)
+          const value = i < offset ? null : stat.probes[i - offset]
+          return <span key={i} className={cn('rounded-[1px] bg-white/[0.055]', value != null && tcpProbeClass(value))} />
+        })}
+      </div>
+      <div className={cn('text-right font-mono text-[13px] font-extrabold', tone)}>
+        {latest == null ? '—' : `${latest.toFixed(0)}ms`}
+      </div>
+      <div className="text-right font-mono text-[11px] font-bold text-slate-400">{stat.lossRate.toFixed(0)}%</div>
+    </div>
+  )
+}
+
+function tcpProbeClass(v: number) {
+  if (v <= 80) return 'bg-gradient-to-b from-green-300 to-green-600'
+  if (v <= 180) return 'bg-gradient-to-b from-yellow-300 to-orange-500'
+  return 'bg-gradient-to-b from-rose-300 to-red-600'
+}
+
+function latencyTone(v: number | null) {
+  if (v == null) return 'text-slate-500'
+  if (v <= 80) return 'text-emerald-400'
+  if (v <= 180) return 'text-orange-400'
+  return 'text-rose-400'
+}
+
+function HistoryStrip({ online, history }: { online: boolean; history: Node['history'] }) {
+  const samples = history.slice(-60)
+  return (
+    <div className="grid h-[17px] grid-cols-[repeat(60,minmax(0,1fr))] gap-px overflow-hidden">
+      {Array.from({ length: 60 }, (_, i) => {
+        const sample = samples[i - (60 - samples.length)]
+        const active = online && sample
+        const warn = active && sample.cpu != null && sample.cpu >= 90
+        return <span key={i} className={cn('rounded-[1px] bg-white/[0.06]', active && (warn ? 'bg-gradient-to-b from-yellow-300 to-orange-500' : 'bg-gradient-to-b from-green-300 to-green-600'))} />
+      })}
+    </div>
   )
 }

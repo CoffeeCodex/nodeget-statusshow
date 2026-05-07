@@ -3,6 +3,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from './components/ui/alert'
 import { useConfig } from './hooks/useConfig'
 import { useNodes } from './hooks/useNodes'
+import { useMainTcpLatency } from './hooks/useMainTcpLatency'
 import { Background } from './components/Background'
 import { Navbar } from './components/Navbar'
 import { Footer } from './components/Footer'
@@ -155,6 +156,7 @@ export function App() {
     })
   }, [nodes, query, activeTag, activeRegion, sort, regions])
 
+  const { summaryByUuid: tcpByUuid } = useMainTcpLatency(pool, view === 'cards' ? list : [])
   const selectedNode = selected ? nodes.get(selected) || null : null
 
   if (configError) {
@@ -220,7 +222,7 @@ export function App() {
         {!empty && view === 'cards' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {list.map(n => (
-              <NodeCard key={n.uuid} node={n} />
+              <NodeCard key={n.uuid} node={n} tcpStats={tcpByUuid[n.uuid]} />
             ))}
           </div>
         )}
