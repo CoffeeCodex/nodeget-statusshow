@@ -103,7 +103,7 @@ export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType):
     const probes = list
       .slice()
       .sort((a, b) => a.timestamp - b.timestamp)
-      .slice(-100)
+      .slice(-60)
       .map(r => pickValue(r, type))
     const lossRate = list.length ? ((list.length - vals.length) / list.length) * 100 : 0
     if (!vals.length) return { name, color, avg: null, jitter: null, lossRate, latest: null, probes }

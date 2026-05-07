@@ -5,7 +5,7 @@ import type { Node, TaskQueryResult } from '../types'
 import { computeLatencyStats, computeOnlineHistory, type LatencyStats, type OnlineHistory } from '../utils/latency'
 
 const QUERY_TIMEOUT_MS = 10_000
-const TCP_WINDOW_MS = 100 * 60 * 1000
+const TCP_WINDOW_MS = 60 * 60 * 1000
 const PING_WINDOW_MS = 24 * 60 * 60 * 1000
 const MAX_NODES = 80
 

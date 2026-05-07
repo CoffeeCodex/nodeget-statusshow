@@ -150,9 +150,9 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
       <div className="truncate text-xs font-semibold text-slate-300" title={tcpDisplayName(stat.name)}>
         {tcpDisplayName(stat.name)}
       </div>
-      <div className="grid h-4 grid-cols-[repeat(100,minmax(0,1fr))] gap-px overflow-hidden">
-        {Array.from({ length: 100 }, (_, i) => {
-          const offset = Math.max(0, 100 - stat.probes.length)
+      <div className="grid h-4 grid-cols-[repeat(60,minmax(0,1fr))] gap-px overflow-hidden">
+        {Array.from({ length: 60 }, (_, i) => {
+          const offset = Math.max(0, 60 - stat.probes.length)
           const value = i < offset ? null : stat.probes[i - offset]
           return <span key={i} className={cn('rounded-[1px] bg-white/[0.055]', value != null && tcpProbeClass(value))} />
         })}
