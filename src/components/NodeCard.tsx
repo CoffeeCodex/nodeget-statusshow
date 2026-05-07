@@ -46,17 +46,12 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
 
         <div className="mt-[15px] rounded-[14px] border border-white/[0.075] bg-black/15 p-3 text-[13px] leading-snug text-slate-200">
           <div className="truncate">{os || 'Unknown system'}</div>
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            {specs.map(spec => (
-              <SpecPill key={spec.label} label={spec.label} value={spec.value} />
-            ))}
-          </div>
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-[9px]">
-          <UsageBlock label="CPU" value={u.cpu} hot />
-          <UsageBlock label="MEM" value={u.mem} />
-          <UsageBlock label="DISK" value={u.disk} />
+          <UsageBlock label="CPU" spec={specs.cpu} value={u.cpu} hot />
+          <UsageBlock label="MEM" spec={specs.mem} value={u.mem} />
+          <UsageBlock label="DISK" spec={specs.disk} value={u.disk} />
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2.5">
@@ -95,33 +90,25 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
 function nodeSpecs(node: Node, usage: ReturnType<typeof deriveUsage>) {
   const cpu = node.static?.cpu
   const cores = cpu?.logical_cores ?? cpu?.physical_cores ?? cpu?.per_core?.length ?? null
-  return [
-    { label: 'CPU', value: cores ? `${cores} Core${cores === 1 ? '' : 's'}` : '—' },
-    { label: 'MEM', value: usage.memTotal > 0 ? bytes(usage.memTotal) : '—' },
-    { label: 'DISK', value: usage.diskTotal > 0 ? bytes(usage.diskTotal) : '—' },
-  ]
+  return {
+    cpu: cores ? `${cores} Core${cores === 1 ? '' : 's'}` : undefined,
+    mem: usage.memTotal > 0 ? bytes(usage.memTotal) : undefined,
+    disk: usage.diskTotal > 0 ? bytes(usage.diskTotal) : undefined,
+  }
 }
 
-function SpecPill({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 rounded-[10px] border border-white/[0.06] bg-white/[0.035] px-2.5 py-2">
-      <div className="text-[10px] font-black uppercase tracking-[0.11em] text-slate-500">{label}</div>
-      <div className="mt-0.5 truncate font-mono text-[13px] font-extrabold text-blue-100" title={value}>
-        {value}
-      </div>
-    </div>
-  )
-}
-
-function UsageBlock({ label, value, hot }: { label: string; value?: number; hot?: boolean }) {
+function UsageBlock({ label, spec, value, hot }: { label: string; spec?: string; value?: number; hot?: boolean }) {
   const safe = value != null && Number.isFinite(value) ? value : null
   const capped = Math.max(0, Math.min(100, safe ?? 0))
   const filled = safe == null ? 0 : Math.ceil(capped / 5)
   return (
     <div className="min-w-0 rounded-[14px] border border-white/[0.075] bg-white/[0.025] p-2.5">
       <div className="mb-2 flex items-baseline justify-between gap-1.5">
-        <span className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-400">{label}</span>
-        <span className={cn('font-mono text-[13px] font-bold', hot && safe != null && safe >= 90 ? 'text-rose-400' : 'text-cyan-300')}>
+        <span className="min-w-0 truncate text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-400" title={spec ? `${label} ${spec}` : label}>
+          {label}
+          {spec && <span className="ml-1 font-mono text-[10px] normal-case tracking-normal text-slate-500">({spec})</span>}
+        </span>
+        <span className={cn('shrink-0 font-mono text-[13px] font-bold', hot && safe != null && safe >= 90 ? 'text-rose-400' : 'text-cyan-300')}>
           {pct(safe)}
         </span>
       </div>
