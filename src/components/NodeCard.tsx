@@ -46,6 +46,11 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
 
         <div className="mt-[15px] rounded-[14px] border border-white/[0.075] bg-black/15 p-3 text-[13px] leading-snug text-slate-200">
           <div className="truncate">{os || 'Unknown system'}</div>
+          {specs.cpuDetail && (
+            <div className="mt-1 truncate font-mono text-[11px] font-semibold text-slate-500" title={specs.cpuDetail}>
+              CPU {specs.cpuDetail}
+            </div>
+          )}
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-[9px]">
@@ -90,11 +95,34 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
 function nodeSpecs(node: Node, usage: ReturnType<typeof deriveUsage>) {
   const cpu = node.static?.cpu
   const cores = cpu?.logical_cores ?? cpu?.physical_cores ?? cpu?.per_core?.length ?? null
+  const cpuDetail = cpuDetailLabel(cpu, cores)
   return {
-    cpu: cores ? `${cores} Core${cores === 1 ? '' : 's'}` : undefined,
+    cpu: cores ? `${cores} vCore${cores === 1 ? '' : 's'}` : undefined,
+    cpuDetail,
     mem: usage.memTotal > 0 ? bytes(usage.memTotal) : undefined,
     disk: usage.diskTotal > 0 ? bytes(usage.diskTotal) : undefined,
   }
+}
+
+function cpuDetailLabel(cpu: Node['static']['cpu'] | undefined, cores: number | null) {
+  if (!cpu) return cores ? `${cores} vCore${cores === 1 ? '' : 's'}` : undefined
+  const brand = cleanCpuBrand(cpu.brand || cpu.per_core?.find(core => core.brand)?.brand)
+  const frequency = cpu.per_core?.find(core => Number.isFinite(core.frequency) && core.frequency > 0)?.frequency
+  const parts = [cores ? `${cores} vCore${cores === 1 ? '' : 's'}` : null, brand, formatCpuFrequency(frequency)].filter(Boolean)
+  return parts.length ? parts.join(' · ') : undefined
+}
+
+function cleanCpuBrand(brand?: string) {
+  return brand
+    ?.replace(/\s+/g, ' ')
+    .replace(/\(R\)|\(TM\)/gi, '')
+    .replace(/CPU\s+/i, '')
+    .trim()
+}
+
+function formatCpuFrequency(frequency?: number) {
+  if (!frequency || !Number.isFinite(frequency)) return undefined
+  return frequency >= 1000 ? `@ ${(frequency / 1000).toFixed(2)}GHz` : `@ ${frequency.toFixed(0)}MHz`
 }
 
 function UsageBlock({ label, spec, value, hot }: { label: string; spec?: string; value?: number; hot?: boolean }) {
