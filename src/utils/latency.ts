@@ -145,13 +145,18 @@ export function computeOnlineHistory(rows: TaskQueryResult[], type: LatencyType)
   const hours = Array.from({ length: bucketCount }, () => ({ ratio: null as number | null }))
   if (!rows.length) return { hours, percent: null }
 
-  const now = Date.now()
-  const start = now - 24 * 60 * 60 * 1000
-  const hourMs = 60 * 60 * 1000
+  const normalizedRows = rows
+    .map(row => ({ row, t: normalizeTs(row.timestamp) }))
+    .sort((a, b) => a.t - b.t)
+  const latest = normalizedRows[normalizedRows.length - 1]?.t
+  if (latest == null) return { hours, percent: null }
 
-  for (const row of rows) {
-    const t = normalizeTs(row.timestamp)
-    if (t < start || t > now) continue
+  const hourMs = 60 * 60 * 1000
+  const end = latest
+  const start = end - bucketCount * hourMs
+
+  for (const { row, t } of normalizedRows) {
+    if (t < start || t > end) continue
     const idx = Math.min(bucketCount - 1, Math.max(0, Math.floor((t - start) / hourMs)))
     buckets[idx].total += 1
     if (pickValue(row, type) != null) buckets[idx].ok += 1
