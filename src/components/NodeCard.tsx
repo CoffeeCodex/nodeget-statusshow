@@ -146,8 +146,10 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
   const latest = stat.latest ?? stat.avg
   const tone = latencyTone(latest)
   return (
-    <div className="my-2 grid grid-cols-[38px_1fr_56px_32px] items-center gap-2">
-      <div className="truncate text-xs font-semibold text-slate-300" title={stat.name}>{stat.name}</div>
+    <div className="my-2 grid grid-cols-[72px_1fr_56px_32px] items-center gap-2">
+      <div className="truncate text-xs font-semibold text-slate-300" title={tcpDisplayName(stat.name)}>
+        {tcpDisplayName(stat.name)}
+      </div>
       <div className="grid h-4 grid-cols-[repeat(100,minmax(0,1fr))] gap-px overflow-hidden">
         {Array.from({ length: 100 }, (_, i) => {
           const offset = Math.max(0, 100 - stat.probes.length)
@@ -161,6 +163,10 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
       <div className="text-right font-mono text-[11px] font-bold text-slate-400">{stat.lossRate.toFixed(0)}%</div>
     </div>
   )
+}
+
+function tcpDisplayName(name: string) {
+  return name.replace(/^tcping[-_\s]*/i, '') || name
 }
 
 function tcpProbeClass(v: number) {
