@@ -85,6 +85,11 @@ export interface LatencyStats {
   probes: (number | null)[]
 }
 
+export interface OnlineHistory {
+  slots: boolean[]
+  percent: number | null
+}
+
 export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType): LatencyStats[] {
   const stats = seriesNames(rows).map<LatencyStats>(name => {
     const list = rows.filter(r => (r.cron_source || '未知') === name)
@@ -128,4 +133,30 @@ export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType):
     if (aj !== bj) return aj - bj
     return a.lossRate - b.lossRate
   })
+}
+
+export function computeOnlineHistory(
+  rows: TaskQueryResult[],
+  type: LatencyType,
+  slotCount = 96,
+): OnlineHistory {
+  const slots = Array.from({ length: slotCount }, () => false)
+  if (!rows.length) return { slots, percent: null }
+
+  const now = Date.now()
+  const start = now - 24 * 60 * 60 * 1000
+  const slotMs = (now - start) / slotCount
+  const seen = new Set<number>()
+
+  for (const row of rows) {
+    const t = normalizeTs(row.timestamp)
+    if (t < start || t > now) continue
+    const idx = Math.min(slotCount - 1, Math.max(0, Math.floor((t - start) / slotMs)))
+    seen.add(idx)
+    if (pickValue(row, type) != null) slots[idx] = true
+  }
+
+  if (!seen.size) return { slots, percent: null }
+  const online = slots.filter(Boolean).length
+  return { slots, percent: (online / seen.size) * 100 }
 }

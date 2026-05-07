@@ -5,14 +5,15 @@ import { bytes, pct, uptime } from '../utils/format'
 import { cpuLabel, deriveUsage, displayName, distroLogo, osLabel, virtLabel } from '../utils/derive'
 import { cn } from '../utils/cn'
 import type { Node } from '../types'
-import type { LatencyStats } from '../utils/latency'
+import type { LatencyStats, OnlineHistory } from '../utils/latency'
 
 interface Props {
   node: Node
   tcpStats?: LatencyStats[]
+  onlineHistory?: OnlineHistory
 }
 
-export function NodeCard({ node, tcpStats = [] }: Props) {
+export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
   const u = deriveUsage(node)
   const os = osLabel(node)
   const logo = distroLogo(node)
@@ -63,9 +64,11 @@ export function NodeCard({ node, tcpStats = [] }: Props) {
         <div className="mt-3">
           <div className="mb-1.5 flex items-center justify-between text-xs text-slate-400">
             <span>24h 在线</span>
-            <span className="font-mono text-slate-200">{node.online ? '100%' : '—'}</span>
+            <span className="font-mono text-slate-200">
+              {onlineHistory?.percent == null ? '—' : `${onlineHistory.percent.toFixed(0)}%`}
+            </span>
           </div>
-          <HistoryStrip online={node.online} history={node.history} />
+          <HistoryStrip onlineHistory={onlineHistory} />
         </div>
 
         <div className="mt-3.5 flex items-center gap-2.5 text-xs text-slate-400">
@@ -173,16 +176,19 @@ function latencyTone(v: number | null) {
   return 'text-rose-400'
 }
 
-function HistoryStrip({ online, history }: { online: boolean; history: Node['history'] }) {
-  const samples = history.slice(-60)
+function HistoryStrip({ onlineHistory }: { onlineHistory?: OnlineHistory }) {
+  const slots = onlineHistory?.slots ?? Array.from({ length: 96 }, () => false)
   return (
-    <div className="grid h-[17px] grid-cols-[repeat(60,minmax(0,1fr))] gap-px overflow-hidden">
-      {Array.from({ length: 60 }, (_, i) => {
-        const sample = samples[i - (60 - samples.length)]
-        const active = online && sample
-        const warn = active && sample.cpu != null && sample.cpu >= 90
-        return <span key={i} className={cn('rounded-[1px] bg-white/[0.06]', active && (warn ? 'bg-gradient-to-b from-yellow-300 to-orange-500' : 'bg-gradient-to-b from-green-300 to-green-600'))} />
-      })}
+    <div className="grid h-[17px] grid-cols-[repeat(96,minmax(0,1fr))] gap-px overflow-hidden">
+      {slots.map((online, i) => (
+        <span
+          key={i}
+          className={cn(
+            'rounded-[1px] bg-white/[0.06]',
+            online && 'bg-gradient-to-b from-green-300 to-green-600',
+          )}
+        />
+      ))}
     </div>
   )
 }
