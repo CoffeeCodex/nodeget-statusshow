@@ -18,7 +18,6 @@ export function NodeCard({ node, tcpStats = [] }: Props) {
   const logo = distroLogo(node)
   const virt = virtLabel(node)
   const cpu = cpuLabel(node)
-  const provider = node.source || node.meta?.region || ''
 
   return (
     <a href={`#${encodeURIComponent(node.uuid)}`} className="block group">
@@ -70,12 +69,11 @@ export function NodeCard({ node, tcpStats = [] }: Props) {
         </div>
 
         <div className="mt-3.5 flex items-center gap-2.5 text-xs text-slate-400">
-          <span className="truncate text-slate-300">{provider}</span>
-          <span className="ml-auto inline-flex items-center gap-1 font-mono">
+          <span className="inline-flex items-center gap-1 font-mono">
             <Clock className="h-3 w-3" />
             {uptime(u.uptime)}
           </span>
-          <span className={cn('text-[11px] font-black tracking-[0.11em]', node.online ? 'text-emerald-400' : 'text-rose-400')}>
+          <span className={cn('ml-auto text-[11px] font-black tracking-[0.11em]', node.online ? 'text-emerald-400' : 'text-rose-400')}>
             {node.online ? 'ONLINE' : 'OFFLINE'}
           </span>
         </div>
