@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp, Clock } from 'lucide-react'
 import { Flag } from './Flag'
 import { StatusDot } from './StatusDot'
 import { bytes, pct, uptime } from '../utils/format'
-import { cpuLabel, deriveUsage, displayName, distroLogo, osLabel, virtLabel } from '../utils/derive'
+import { deriveUsage, displayName, distroLogo, osLabel, virtLabel } from '../utils/derive'
 import { hasCost, remainingDays } from '../utils/cost'
 import { cn } from '../utils/cn'
 import type { Node, NodeMeta } from '../types'
@@ -19,7 +19,7 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
   const os = osLabel(node)
   const logo = distroLogo(node)
   const virt = virtLabel(node)
-  const cpu = cpuLabel(node)
+  const specs = nodeSpecs(node, u)
 
   return (
     <a href={`#${encodeURIComponent(node.uuid)}`} className="block group">
@@ -46,7 +46,11 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
 
         <div className="mt-[15px] rounded-[14px] border border-white/[0.075] bg-black/15 p-3 text-[13px] leading-snug text-slate-200">
           <div className="truncate">{os || 'Unknown system'}</div>
-          <div className="mt-1 truncate text-slate-400" title={cpu || undefined}>{cpu || 'Unknown CPU'}</div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {specs.map(spec => (
+              <SpecPill key={spec.label} label={spec.label} value={spec.value} />
+            ))}
+          </div>
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-[9px]">
@@ -85,6 +89,27 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
         </div>
       </article>
     </a>
+  )
+}
+
+function nodeSpecs(node: Node, usage: ReturnType<typeof deriveUsage>) {
+  const cpu = node.static?.cpu
+  const cores = cpu?.logical_cores ?? cpu?.physical_cores ?? cpu?.per_core?.length ?? null
+  return [
+    { label: 'CPU', value: cores ? `${cores} Core${cores === 1 ? '' : 's'}` : '—' },
+    { label: 'MEM', value: usage.memTotal > 0 ? bytes(usage.memTotal) : '—' },
+    { label: 'DISK', value: usage.diskTotal > 0 ? bytes(usage.diskTotal) : '—' },
+  ]
+}
+
+function SpecPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-[10px] border border-white/[0.06] bg-white/[0.035] px-2.5 py-2">
+      <div className="text-[10px] font-black uppercase tracking-[0.11em] text-slate-500">{label}</div>
+      <div className="mt-0.5 truncate font-mono text-[13px] font-extrabold text-blue-100" title={value}>
+        {value}
+      </div>
+    </div>
   )
 }
 
