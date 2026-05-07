@@ -150,13 +150,7 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
       <div className="truncate text-xs font-semibold text-slate-300" title={tcpDisplayName(stat.name)}>
         {tcpDisplayName(stat.name)}
       </div>
-      <div className="grid h-4 grid-cols-[repeat(60,minmax(0,1fr))] gap-px overflow-hidden">
-        {Array.from({ length: 60 }, (_, i) => {
-          const offset = Math.max(0, 60 - stat.probes.length)
-          const value = i < offset ? null : stat.probes[i - offset]
-          return <span key={i} className={cn('rounded-[1px] bg-white/[0.055]', value != null && tcpProbeClass(value))} />
-        })}
-      </div>
+      <TcpSparkline probes={stat.probes} />
       <div className={cn('text-right font-mono text-[13px] font-extrabold', tone)}>
         {latest == null ? '—' : `${latest.toFixed(0)}ms`}
       </div>
@@ -165,14 +159,69 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
   )
 }
 
+function TcpSparkline({ probes }: { probes: (number | null)[] }) {
+  const width = 180
+  const height = 26
+  const offset = Math.max(0, 60 - probes.length)
+  const values = Array.from({ length: 60 }, (_, i) => (i < offset ? null : probes[i - offset]))
+  const numeric = values.filter((v): v is number => v != null)
+  if (numeric.length < 2) {
+    return <div className="h-[26px] rounded-[2px] bg-white/[0.045]" />
+  }
+
+  const min = Math.min(20, ...numeric)
+  const max = Math.max(220, ...numeric)
+  const points = values.map((v, i) => {
+    if (v == null) return null
+    const x = (i / (values.length - 1)) * width
+    const y = height - 4 - ((v - min) / (max - min || 1)) * (height - 8)
+    return { x, y, v }
+  })
+
+  const paths: { d: string; tone: string }[] = []
+  let segment: NonNullable<(typeof points)[number]>[] = []
+  const flush = () => {
+    if (segment.length < 2) {
+      segment = []
+      return
+    }
+    const avg = segment.reduce((sum, p) => sum + p.v, 0) / segment.length
+    paths.push({
+      tone: latencyStroke(avg),
+      d: segment.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' '),
+    })
+    segment = []
+  }
+
+  points.forEach(point => {
+    if (!point) flush()
+    else segment.push(point)
+  })
+  flush()
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-[26px] w-full overflow-visible">
+      <line x1="0" y1="20" x2={width} y2="20" className="stroke-white/[0.075]" strokeWidth="1" />
+      {values.map((v, i) => {
+        if (v != null) return null
+        const x = (i / (values.length - 1)) * width
+        return <line key={i} x1={x} x2={x} y1="4" y2={height - 3} className="stroke-rose-400" strokeWidth="1.7" opacity="0.9" />
+      })}
+      {paths.map((path, i) => (
+        <path key={i} d={path.d} className={path.tone} fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      ))}
+    </svg>
+  )
+}
+
 function tcpDisplayName(name: string) {
   return name.replace(/^tcping[-_\s]*/i, '') || name
 }
 
-function tcpProbeClass(v: number) {
-  if (v <= 80) return 'bg-gradient-to-b from-green-300 to-green-600'
-  if (v <= 180) return 'bg-gradient-to-b from-yellow-300 to-orange-500'
-  return 'bg-gradient-to-b from-rose-300 to-red-600'
+function latencyStroke(v: number) {
+  if (v <= 80) return 'stroke-emerald-400'
+  if (v <= 180) return 'stroke-orange-400'
+  return 'stroke-rose-400'
 }
 
 function latencyTone(v: number | null) {
@@ -183,15 +232,18 @@ function latencyTone(v: number | null) {
 }
 
 function HistoryStrip({ onlineHistory }: { onlineHistory?: OnlineHistory }) {
-  const slots = onlineHistory?.slots ?? Array.from({ length: 96 }, () => false)
+  const hours = onlineHistory?.hours ?? Array.from({ length: 24 }, () => ({ ratio: null }))
   return (
-    <div className="grid h-[17px] grid-cols-[repeat(96,minmax(0,1fr))] gap-px overflow-hidden">
-      {slots.map((online, i) => (
+    <div className="grid h-4 grid-cols-[repeat(24,minmax(0,1fr))] items-center gap-1 overflow-hidden">
+      {hours.map((hour, i) => (
         <span
           key={i}
+          title={hour.ratio == null ? `${i}:00 · no data` : `${i}:00 · ${hour.ratio.toFixed(0)}%`}
           className={cn(
-            'rounded-[1px] bg-white/[0.06]',
-            online && 'bg-gradient-to-b from-green-300 to-green-600',
+            'h-2.5 rounded-full bg-white/[0.07] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]',
+            hour.ratio != null && hour.ratio >= 95 && 'bg-gradient-to-b from-green-300 to-green-600 shadow-[0_0_10px_rgba(52,211,153,0.12)]',
+            hour.ratio != null && hour.ratio >= 70 && hour.ratio < 95 && 'bg-gradient-to-b from-yellow-300 to-orange-500 shadow-[0_0_10px_rgba(251,146,60,0.12)]',
+            hour.ratio != null && hour.ratio < 70 && 'bg-gradient-to-b from-rose-300 to-red-600 shadow-[0_0_10px_rgba(251,113,133,0.12)]',
           )}
         />
       ))}

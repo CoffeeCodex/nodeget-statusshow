@@ -85,8 +85,12 @@ export interface LatencyStats {
   probes: (number | null)[]
 }
 
+export interface OnlineHour {
+  ratio: number | null
+}
+
 export interface OnlineHistory {
-  slots: boolean[]
+  hours: OnlineHour[]
   percent: number | null
 }
 
@@ -135,28 +139,32 @@ export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType):
   })
 }
 
-export function computeOnlineHistory(
-  rows: TaskQueryResult[],
-  type: LatencyType,
-  slotCount = 96,
-): OnlineHistory {
-  const slots = Array.from({ length: slotCount }, () => false)
-  if (!rows.length) return { slots, percent: null }
+export function computeOnlineHistory(rows: TaskQueryResult[], type: LatencyType): OnlineHistory {
+  const bucketCount = 24
+  const buckets = Array.from({ length: bucketCount }, () => ({ total: 0, ok: 0 }))
+  const hours = Array.from({ length: bucketCount }, () => ({ ratio: null as number | null }))
+  if (!rows.length) return { hours, percent: null }
 
   const now = Date.now()
   const start = now - 24 * 60 * 60 * 1000
-  const slotMs = (now - start) / slotCount
-  const seen = new Set<number>()
+  const hourMs = 60 * 60 * 1000
 
   for (const row of rows) {
     const t = normalizeTs(row.timestamp)
     if (t < start || t > now) continue
-    const idx = Math.min(slotCount - 1, Math.max(0, Math.floor((t - start) / slotMs)))
-    seen.add(idx)
-    if (pickValue(row, type) != null) slots[idx] = true
+    const idx = Math.min(bucketCount - 1, Math.max(0, Math.floor((t - start) / hourMs)))
+    buckets[idx].total += 1
+    if (pickValue(row, type) != null) buckets[idx].ok += 1
   }
 
-  if (!seen.size) return { slots, percent: null }
-  const online = slots.filter(Boolean).length
-  return { slots, percent: (online / seen.size) * 100 }
+  let total = 0
+  let ok = 0
+  for (let i = 0; i < bucketCount; i++) {
+    const bucket = buckets[i]
+    total += bucket.total
+    ok += bucket.ok
+    if (bucket.total > 0) hours[i] = { ratio: (bucket.ok / bucket.total) * 100 }
+  }
+
+  return { hours, percent: total > 0 ? (ok / total) * 100 : null }
 }
