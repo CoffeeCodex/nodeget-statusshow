@@ -3,8 +3,9 @@ import { Flag } from './Flag'
 import { StatusDot } from './StatusDot'
 import { bytes, pct, uptime } from '../utils/format'
 import { cpuLabel, deriveUsage, displayName, distroLogo, osLabel, virtLabel } from '../utils/derive'
+import { hasCost, remainingDays } from '../utils/cost'
 import { cn } from '../utils/cn'
-import type { Node } from '../types'
+import type { Node, NodeMeta } from '../types'
 import type { LatencyStats, OnlineHistory } from '../utils/latency'
 
 interface Props {
@@ -71,6 +72,8 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
           <HistoryStrip onlineHistory={onlineHistory} />
         </div>
 
+        {hasCost(node.meta) && <CostLine meta={node.meta} />}
+
         <div className="mt-3.5 flex items-center gap-2.5 text-xs text-slate-400">
           <span className="inline-flex items-center gap-1 font-mono">
             <Clock className="h-3 w-3" />
@@ -121,6 +124,34 @@ function NetBox({ dir, value }: { dir: 'down' | 'up'; value: string }) {
         {dir === 'down' ? 'DOWN' : 'UP'}
       </div>
       <div className="mt-1 font-mono text-[17px] font-bold">{value}</div>
+    </div>
+  )
+}
+
+function CostLine({ meta }: { meta: NodeMeta }) {
+  const unit = meta.priceUnit || '$'
+  const days = remainingDays(meta.expireTime)
+  const price = meta.price > 0 ? `${unit}${meta.price.toFixed(2)} / ${meta.priceCycle}d` : null
+  let daysText: string | null = null
+  if (days != null) {
+    if (days < 0) daysText = 'expired'
+    else if (days === 0) daysText = 'expires today'
+    else daysText = `${days}d left`
+  }
+
+  return (
+    <div
+      className={cn(
+        'mt-2.5 flex min-w-0 items-center gap-2 text-xs text-slate-400',
+        days != null && days <= 7 && days >= 0 && '[&_.cost-days]:text-orange-400',
+        days != null && days < 0 && '[&_.cost-days]:text-rose-400',
+      )}
+      title={meta.expireTime ? `expires ${meta.expireTime}` : undefined}
+    >
+      <span className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">COST</span>
+      {price && <span className="font-mono font-extrabold text-blue-100">{price}</span>}
+      {price && daysText && <span className="text-white/[0.22]">·</span>}
+      {daysText && <span className="cost-days font-mono font-extrabold text-emerald-400">{daysText}</span>}
     </div>
   )
 }
