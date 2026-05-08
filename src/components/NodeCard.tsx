@@ -69,7 +69,7 @@ export function NodeCard({ node, tcpStats = [], agentHistory }: Props) {
 
         <div className="mt-3">
           <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground dark:text-slate-400">
-            <span>在线状态</span>
+            <span>24h 在线</span>
             <span className="font-mono text-foreground dark:text-slate-200">
               {agentHistory?.percent == null ? '—' : `${agentHistory.percent.toFixed(0)}%`}
             </span>
@@ -343,16 +343,16 @@ function latencyTone(v: number | null) {
 }
 
 function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
-  const slots = agentHistory?.slots ?? Array.from({ length: 40 }, () => ({ active: false as const, t: null as number | null }))
+  const slots = agentHistory?.slots ?? Array.from({ length: 24 }, () => ({ active: false as const, t: null as number | null, successRate: null }))
   return (
-    <div className="grid h-5 grid-cols-[repeat(40,minmax(0,1fr))] items-stretch gap-[2px] overflow-hidden">
+    <div className="grid h-5 grid-cols-[repeat(24,minmax(0,1fr))] items-stretch gap-[2px] overflow-hidden">
       {slots.map((slot, i) => (
         <span
           key={i}
           title={agentTitle(slot)}
           className={cn(
             'rounded-[2px] bg-slate-200 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.035)] dark:bg-white/[0.07] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]',
-            slot.active && 'bg-gradient-to-b from-green-300 to-green-600 shadow-[0_0_10px_rgba(52,211,153,0.12)]',
+            pingSlotTone(slot.successRate),
           )}
         />
       ))}
@@ -360,7 +360,21 @@ function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
   )
 }
 
+function pingSlotTone(successRate?: number | null) {
+  if (successRate == null) return ''
+  if (successRate >= 95) return 'bg-gradient-to-b from-emerald-300 to-emerald-600 shadow-[0_0_10px_rgba(52,211,153,0.12)]'
+  if (successRate >= 70) return 'bg-gradient-to-b from-orange-300 to-orange-600 shadow-[0_0_10px_rgba(251,146,60,0.12)]'
+  return 'bg-gradient-to-b from-rose-300 to-rose-600 shadow-[0_0_10px_rgba(251,113,133,0.12)]'
+}
+
 function agentTitle(slot: AgentHistory['slots'][number]) {
-  const t = slot.t ?? slot.start ?? slot.end
-  return t == null ? 'no data' : new Date(t).toLocaleString(undefined, { hour12: false })
+  const start = slot.start ?? slot.t
+  const end = slot.end
+  if (start == null && end == null) return 'no data'
+  const windowText = [start, end]
+    .filter((t): t is number => t != null)
+    .map(t => new Date(t).toLocaleString(undefined, { hour12: false }))
+    .join(' – ')
+  const rateText = slot.successRate == null ? '无 ping 数据' : `ping 成功率 ${slot.successRate.toFixed(0)}% (${slot.success ?? 0}/${slot.total ?? 0})`
+  return `${windowText} · ${rateText}`
 }

@@ -90,6 +90,9 @@ export interface AgentSlot {
   t: number | null
   start?: number
   end?: number
+  successRate?: number | null
+  total?: number
+  success?: number
 }
 
 export interface AgentHistory {
@@ -167,4 +170,40 @@ export function computeAgentHistory(history: { t: number }[], online: boolean, n
   })
   const activeCount = slots.filter(slot => slot.active).length
   return { slots, percent: slots.length ? (activeCount / slots.length) * 100 : null }
+}
+
+export function computePingAvailability(rows: TaskQueryResult[], now = Date.now()): AgentHistory {
+  const bucketCount = 24
+  const bucketMs = 60 * 60 * 1000
+  const end = Math.ceil(now / bucketMs) * bucketMs
+  const start = end - bucketCount * bucketMs
+  const normalized = [...(rows || [])]
+    .map(row => ({ ...row, timestamp: normalizeTs(row.timestamp) }))
+    .sort((a, b) => a.timestamp - b.timestamp)
+
+  const slots = Array.from({ length: bucketCount }, (_, index): AgentSlot => {
+    const slotStart = start + index * bucketMs
+    const slotEnd = slotStart + bucketMs
+    const bucket = normalized.filter(row => row.timestamp >= slotStart && row.timestamp < slotEnd)
+    const success = bucket.filter(row => row.success && pickValue(row, 'ping') != null).length
+    const total = bucket.length
+    const successRate = total ? (success / total) * 100 : null
+    const t = bucket.at(-1)?.timestamp ?? null
+    return {
+      active: successRate != null && successRate >= 95,
+      t,
+      start: slotStart,
+      end: slotEnd,
+      successRate,
+      total,
+      success,
+    }
+  })
+
+  const measured = slots.filter(slot => slot.successRate != null)
+  const percent = measured.length
+    ? measured.reduce((sum, slot) => sum + (slot.successRate ?? 0), 0) / measured.length
+    : null
+
+  return { slots, percent }
 }
