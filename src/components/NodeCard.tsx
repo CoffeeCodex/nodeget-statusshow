@@ -6,15 +6,15 @@ import { deriveUsage, displayName, distroLogo, osLabel, virtLabel } from '../uti
 import { hasCost, remainingDays } from '../utils/cost'
 import { cn } from '../utils/cn'
 import type { Node, NodeMeta } from '../types'
-import type { LatencyStats, OnlineHistory } from '../utils/latency'
+import type { AgentHistory, LatencyStats } from '../utils/latency'
 
 interface Props {
   node: Node
   tcpStats?: LatencyStats[]
-  onlineHistory?: OnlineHistory
+  agentHistory?: AgentHistory
 }
 
-export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
+export function NodeCard({ node, tcpStats = [], agentHistory }: Props) {
   const u = deriveUsage(node)
   const os = osLabel(node)
   const logo = distroLogo(node)
@@ -55,9 +55,9 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-[9px]">
-          <UsageBlock label="CPU" spec={specs.cpu} value={u.cpu} hot />
-          <UsageBlock label="MEM" spec={specs.mem} value={u.mem} />
-          <UsageBlock label="DISK" spec={specs.disk} value={u.disk} />
+          <UsagePie label="CPU" spec={specs.cpu} value={u.cpu} hot />
+          <UsagePie label="MEM" spec={specs.mem} value={u.mem} />
+          <UsagePie label="DISK" spec={specs.disk} value={u.disk} />
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2.5">
@@ -71,10 +71,10 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
           <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground dark:text-slate-400">
             <span>24h 在线</span>
             <span className="font-mono text-foreground dark:text-slate-200">
-              {onlineHistory?.percent == null ? '—' : `${onlineHistory.percent.toFixed(0)}%`}
+              {agentHistory?.percent == null ? '—' : `${agentHistory.percent.toFixed(0)}%`}
             </span>
           </div>
-          <HistoryStrip onlineHistory={onlineHistory} />
+          <AgentHistoryStrip agentHistory={agentHistory} />
         </div>
 
         {hasCost(node.meta) && <CostLine meta={node.meta} />}
@@ -124,6 +124,31 @@ function cleanCpuBrand(brand?: string) {
 function formatCpuFrequency(frequency?: number) {
   if (!frequency || !Number.isFinite(frequency)) return undefined
   return frequency >= 1000 ? `@ ${(frequency / 1000).toFixed(2)}GHz` : `@ ${frequency.toFixed(0)}MHz`
+}
+
+function UsagePie({ label, spec, value, hot }: { label: string; spec?: string; value?: number; hot?: boolean }) {
+  const safe = value != null && Number.isFinite(value) ? value : null
+  const capped = Math.max(0, Math.min(100, safe ?? 0))
+  const tone = hot && safe != null && safe >= 90 ? 'text-rose-400 [--pie:theme(colors.rose.400)]' : '[--pie:theme(colors.cyan.300)] text-cyan-300'
+  return (
+    <div className="min-w-0 rounded-[14px] border border-border bg-muted/45 p-2.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/[0.075] dark:bg-white/[0.025] dark:shadow-none">
+      <div
+        className={cn(
+          'relative mx-auto grid h-[58px] w-[58px] place-items-center rounded-full [background:conic-gradient(var(--pie)_calc(var(--p)*1%),rgba(148,163,184,0.18)_0)]',
+          tone,
+        )}
+        style={{ '--p': capped } as React.CSSProperties}
+        title={spec ? `${label} ${spec}` : label}
+      >
+        <span className="absolute inset-[9px] rounded-full bg-card shadow-[0_0_0_1px_hsl(var(--border)/0.55)] dark:bg-[#10131a]" />
+        <span className="relative z-10 font-mono text-[13px] font-extrabold text-foreground dark:text-slate-100">{pct(safe)}</span>
+      </div>
+      <div className="mt-1.5 truncate text-[11px] font-extrabold uppercase tracking-[0.08em] text-muted-foreground dark:text-slate-400">
+        {label}
+      </div>
+      {spec && <div className="mt-0.5 truncate font-mono text-[10px] font-semibold text-muted-foreground dark:text-slate-500">{spec}</div>}
+    </div>
+  )
 }
 
 function UsageBlock({ label, spec, value, hot }: { label: string; spec?: string; value?: number; hot?: boolean }) {
@@ -303,22 +328,25 @@ function latencyTone(v: number | null) {
   return 'text-rose-400'
 }
 
-function HistoryStrip({ onlineHistory }: { onlineHistory?: OnlineHistory }) {
-  const hours = onlineHistory?.hours ?? Array.from({ length: 24 }, () => ({ ratio: null }))
+function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
+  const slots = agentHistory?.slots ?? Array.from({ length: 96 }, () => ({ active: false as const, t: null as number | null }))
   return (
-    <div className="grid h-4 grid-cols-[repeat(24,minmax(0,1fr))] items-center gap-1 overflow-hidden">
-      {hours.map((hour, i) => (
+    <div className="grid h-5 grid-cols-[repeat(96,minmax(0,1fr))] items-stretch gap-[2px] overflow-hidden">
+      {slots.map((slot, i) => (
         <span
           key={i}
-          title={hour.ratio == null ? `${i}:00 · no data` : `${i}:00 · ${hour.ratio.toFixed(0)}%`}
+          title={agentTitle(slot)}
           className={cn(
-            'h-2.5 rounded-full bg-slate-200 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.035)] dark:bg-white/[0.07] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]',
-            hour.ratio != null && hour.ratio >= 95 && 'bg-gradient-to-b from-green-300 to-green-600 shadow-[0_0_10px_rgba(52,211,153,0.12)]',
-            hour.ratio != null && hour.ratio >= 70 && hour.ratio < 95 && 'bg-gradient-to-b from-yellow-300 to-orange-500 shadow-[0_0_10px_rgba(251,146,60,0.12)]',
-            hour.ratio != null && hour.ratio < 70 && 'bg-gradient-to-b from-rose-300 to-red-600 shadow-[0_0_10px_rgba(251,113,133,0.12)]',
+            'rounded-[2px] bg-slate-200 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.035)] dark:bg-white/[0.07] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]',
+            slot.active && 'bg-gradient-to-b from-green-300 to-green-600 shadow-[0_0_10px_rgba(52,211,153,0.12)]',
           )}
         />
       ))}
     </div>
   )
+}
+
+function agentTitle(slot: AgentHistory['slots'][number]) {
+  const t = slot.t ?? slot.start ?? slot.end
+  return t == null ? 'no data' : new Date(t).toLocaleString(undefined, { hour12: false })
 }

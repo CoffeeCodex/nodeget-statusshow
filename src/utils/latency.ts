@@ -85,12 +85,15 @@ export interface LatencyStats {
   probes: (number | null)[]
 }
 
-export interface OnlineHour {
-  ratio: number | null
+export interface AgentSlot {
+  active: boolean
+  t: number | null
+  start?: number
+  end?: number
 }
 
-export interface OnlineHistory {
-  hours: OnlineHour[]
+export interface AgentHistory {
+  slots: AgentSlot[]
   percent: number | null
 }
 
@@ -139,37 +142,29 @@ export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType):
   })
 }
 
-export function computeOnlineHistory(rows: TaskQueryResult[], type: LatencyType): OnlineHistory {
-  const bucketCount = 24
-  const buckets = Array.from({ length: bucketCount }, () => ({ total: 0, ok: 0 }))
-  const hours = Array.from({ length: bucketCount }, () => ({ ratio: null as number | null }))
-  if (!rows.length) return { hours, percent: null }
-
-  const normalizedRows = rows
-    .map(row => ({ row, t: normalizeTs(row.timestamp) }))
+export function computeAgentHistory(history: { t: number }[], online: boolean, now = Date.now()): AgentHistory {
+  const slotCount = 96
+  const slotMs = 15 * 60 * 1000
+  const end = Math.ceil(now / slotMs) * slotMs
+  const start = end - slotCount * slotMs
+  const sorted = [...(history || [])]
+    .map(item => ({ ...item, t: normalizeTs(item.t) }))
     .sort((a, b) => a.t - b.t)
-  const latest = normalizedRows[normalizedRows.length - 1]?.t
-  if (latest == null) return { hours, percent: null }
-
-  const hourMs = 60 * 60 * 1000
-  const end = latest
-  const start = end - bucketCount * hourMs
-
-  for (const { row, t } of normalizedRows) {
-    if (t < start || t > end) continue
-    const idx = Math.min(bucketCount - 1, Math.max(0, Math.floor((t - start) / hourMs)))
-    buckets[idx].total += 1
-    if (pickValue(row, type) != null) buckets[idx].ok += 1
-  }
-
-  let total = 0
-  let ok = 0
-  for (let i = 0; i < bucketCount; i++) {
-    const bucket = buckets[i]
-    total += bucket.total
-    ok += bucket.ok
-    if (bucket.total > 0) hours[i] = { ratio: (bucket.ok / bucket.total) * 100 }
-  }
-
-  return { hours, percent: total > 0 ? (ok / total) * 100 : null }
+  const latest = sorted.at(-1) ?? null
+  const slots = Array.from({ length: slotCount }, (_, index): AgentSlot => {
+    const slotStart = start + index * slotMs
+    const slotEnd = slotStart + slotMs
+    let sample: { t: number } | null = null
+    for (const item of sorted) {
+      if (item.t < slotStart) continue
+      if (item.t >= slotEnd) break
+      sample = item
+    }
+    const isLatestSlot = index === slotCount - 1
+    const useLatestCurrent = !sample && isLatestSlot && online && latest && now - latest.t <= slotMs * 2
+    const active = Boolean(sample || useLatestCurrent)
+    return { active, t: (sample || (useLatestCurrent ? latest : null))?.t ?? null, start: slotStart, end: slotEnd }
+  })
+  const activeCount = slots.filter(slot => slot.active).length
+  return { slots, percent: slots.length ? (activeCount / slots.length) * 100 : null }
 }

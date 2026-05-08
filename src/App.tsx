@@ -156,7 +156,7 @@ export function App() {
     })
   }, [nodes, query, activeTag, activeRegion, sort, regions])
 
-  const { tcpByUuid, onlineByUuid } = useMainLatency(pool, view === 'cards' ? list : [])
+  const { tcpByUuid, agentByUuid } = useMainLatency(pool, view === 'cards' ? list : [])
   const selectedNode = selected ? nodes.get(selected) || null : null
 
   if (configError) {
@@ -220,13 +220,13 @@ export function App() {
         )}
 
         {!empty && view === 'cards' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {list.map(n => (
               <NodeCard
                 key={n.uuid}
                 node={n}
                 tcpStats={tcpByUuid[n.uuid]}
-                onlineHistory={onlineByUuid[n.uuid]}
+                agentHistory={agentByUuid[n.uuid]}
               />
             ))}
           </div>
