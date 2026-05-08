@@ -129,7 +129,7 @@ function formatCpuFrequency(frequency?: number) {
 function UsagePie({ label, spec, value, hot }: { label: string; spec?: string; value?: number; hot?: boolean }) {
   const safe = value != null && Number.isFinite(value) ? value : null
   const capped = Math.max(0, Math.min(100, safe ?? 0))
-  const tone = hot && safe != null && safe >= 90 ? 'text-rose-400 [--pie:theme(colors.rose.400)]' : '[--pie:theme(colors.cyan.300)] text-cyan-300'
+  const tone = pieTone(safe)
   return (
     <div className="min-w-0 rounded-[14px] border border-border bg-muted/45 p-2.5 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/[0.075] dark:bg-white/[0.025] dark:shadow-none">
       <div
@@ -149,6 +149,13 @@ function UsagePie({ label, spec, value, hot }: { label: string; spec?: string; v
       {spec && <div className="mt-0.5 truncate font-mono text-[10px] font-semibold text-muted-foreground dark:text-slate-500">{spec}</div>}
     </div>
   )
+}
+
+function pieTone(value: number | null) {
+  if (value == null) return '[--pie:theme(colors.slate.500)] text-slate-500'
+  if (value >= 90) return '[--pie:theme(colors.rose.400)] text-rose-400'
+  if (value >= 70) return '[--pie:theme(colors.orange.400)] text-orange-400'
+  return '[--pie:theme(colors.cyan.300)] text-cyan-300'
 }
 
 function UsageBlock({ label, spec, value, hot }: { label: string; spec?: string; value?: number; hot?: boolean }) {
