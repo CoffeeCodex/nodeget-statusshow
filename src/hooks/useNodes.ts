@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BackendPool } from '../api/pool'
-import { dynamicSummaryMulti, kvGetMulti, listAgentUuids, staticDataMulti } from '../api/methods'
+import { dynamicMonitoringSummary, dynamicSummaryMulti, kvGetMulti, listAgentUuids, staticDataMulti } from '../api/methods'
 import { isOnline } from '../utils/status'
 import type { DynamicSummary, HistorySample, Node, NodeMeta, SiteConfig } from '../types'
 
@@ -52,6 +52,7 @@ const META_KEYS = [
 ]
 const DYN_INTERVAL_MS = 2000
 const HISTORY_LIMIT = 60
+const HISTORY_WINDOW_MS = 24 * 60 * 60 * 1000
 
 function emptyMeta(): NodeMeta {
   return {
@@ -183,7 +184,37 @@ export function useNodes(config: SiteConfig | null) {
       )
 
       await tickDynamic()
+      await fetchDynamicHistory()
       setLoading(false)
+    }
+
+    const fetchDynamicHistory = async () => {
+      const now = Date.now()
+      const window: [number, number] = [now - HISTORY_WINDOW_MS, now]
+      const grouped = new Map<string, HistorySample[]>()
+      await Promise.allSettled(
+        pool.entries.map(async entry => {
+          const uuids = sourceUuids.get(entry.name) || []
+          if (!uuids.length) return
+          try {
+            const rows = await dynamicMonitoringSummary(entry.client, uuids, DYNAMIC_FIELDS, window)
+            for (const row of rows || []) {
+              if (!row.uuid) continue
+              const arr = grouped.get(row.uuid) || []
+              arr.push(sampleFrom(row))
+              grouped.set(row.uuid, arr)
+            }
+          } catch {}
+        }),
+      )
+      if (!grouped.size) return
+      setHistory(prev => {
+        const next = new Map(prev)
+        for (const [uuid, rows] of grouped) {
+          next.set(uuid, rows.sort((a, b) => a.t - b.t))
+        }
+        return next
+      })
     }
 
     const tickDynamic = async () => {

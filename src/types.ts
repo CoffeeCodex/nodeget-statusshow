@@ -69,6 +69,8 @@ export interface DynamicSummary {
   udp_connections?: number
 }
 
+export type DynamicMonitoringSummary = DynamicSummary
+
 export interface HistorySample {
   t: number
   cpu: number | null
