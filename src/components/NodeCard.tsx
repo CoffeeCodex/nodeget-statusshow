@@ -69,7 +69,7 @@ export function NodeCard({ node, tcpStats = [], agentHistory }: Props) {
 
         <div className="mt-3">
           <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground dark:text-slate-400">
-            <span>24h 在线</span>
+            <span>在线状态</span>
             <span className="font-mono text-foreground dark:text-slate-200">
               {agentHistory?.percent == null ? '—' : `${agentHistory.percent.toFixed(0)}%`}
             </span>
@@ -343,9 +343,9 @@ function latencyTone(v: number | null) {
 }
 
 function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
-  const slots = agentHistory?.slots ?? Array.from({ length: 96 }, () => ({ active: false as const, t: null as number | null }))
+  const slots = agentHistory?.slots ?? Array.from({ length: 40 }, () => ({ active: false as const, t: null as number | null }))
   return (
-    <div className="grid h-5 grid-cols-[repeat(96,minmax(0,1fr))] items-stretch gap-[2px] overflow-hidden">
+    <div className="grid h-5 grid-cols-[repeat(40,minmax(0,1fr))] items-stretch gap-[2px] overflow-hidden">
       {slots.map((slot, i) => (
         <span
           key={i}

@@ -7,13 +7,14 @@ const hook = readFileSync(new URL('../src/hooks/useMainLatency.ts', import.meta.
 
 const checks = [
   [app.includes('xl:grid-cols-3'), 'cards view permits 3 columns on wide screens'],
-  [nodeCard.includes('24h 在线'), 'card title remains 24h 在线'],
+  [nodeCard.includes('在线状态'), 'card title is 在线状态'],
   [nodeCard.includes('conic-gradient'), 'CPU/MEM/DISK render as pie charts'],
   [nodeCard.includes('title={agentTitle(slot)}'), 'availability tooltip is reduced to a localtime title'],
   [nodeCard.includes('toLocaleString'), 'availability title uses local time formatting'],
   [latency.includes('computeAgentHistory'), 'latency util computes agent communication history'],
   [!latency.includes('computeOnlineHistory(rows, type: LatencyType)'), 'old ping-derived online history helper was removed'],
-  [hook.includes('node.history') && !hook.includes("{ type: 'ping' }"), 'main latency hook uses node.history, not ping task rows'],
+  [latency.includes('slotCount = 40') && latency.includes('slotMs = 3 * 60 * 1000'), 'availability uses upstream-like session slots'],
+  [hook.includes('node.history') && !hook.includes("{ type: 'ping' }") && !hook.includes('dynamicMonitoringSummary'), 'main latency hook uses node.history, not ping or monitoring-summary history'],
 ]
 
 const failed = checks.filter(([ok]) => !ok).map(([, msg]) => msg)

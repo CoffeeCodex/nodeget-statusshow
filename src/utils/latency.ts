@@ -143,8 +143,8 @@ export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType):
 }
 
 export function computeAgentHistory(history: { t: number }[], online: boolean, now = Date.now()): AgentHistory {
-  const slotCount = 96
-  const slotMs = 15 * 60 * 1000
+  const slotCount = 40
+  const slotMs = 3 * 60 * 1000
   const end = Math.ceil(now / slotMs) * slotMs
   const start = end - slotCount * slotMs
   const sorted = [...(history || [])]
