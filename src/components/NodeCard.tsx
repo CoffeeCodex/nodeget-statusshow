@@ -25,29 +25,30 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
     <a href={`#${encodeURIComponent(node.uuid)}`} className="block group">
       <article
         className={cn(
-          'rounded-[20px] border border-white/[0.075] bg-[#10131a] p-[18px] shadow-[0_20px_70px_rgba(0,0,0,0.38)] transition duration-200',
-          'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.018))]',
-          'hover:border-sky-300/25 hover:-translate-y-0.5',
-          node.online ? 'hover:shadow-[0_22px_78px_rgba(0,0,0,0.42)]' : 'opacity-70',
+          'rounded-[20px] border border-border bg-card p-[18px] shadow-[0_20px_54px_rgba(15,23,42,0.11)] transition duration-200',
+          'bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,250,252,0.98))]',
+          'dark:border-white/[0.075] dark:bg-[#10131a] dark:bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.018))] dark:shadow-[0_20px_70px_rgba(0,0,0,0.38)]',
+          'hover:border-sky-500/25 hover:-translate-y-0.5 dark:hover:border-sky-300/25',
+          node.online ? 'hover:shadow-[0_22px_62px_rgba(15,23,42,0.14)] dark:hover:shadow-[0_22px_78px_rgba(0,0,0,0.42)]' : 'opacity-70',
         )}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[14px] border border-white/[0.075] bg-[#0a0d13]">
+          <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[14px] border border-border bg-muted/70 text-sky-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:border-white/[0.075] dark:bg-[#0a0d13] dark:text-cyan-300 dark:shadow-none">
             {logo ? <img src={logo} alt="" className="h-7 w-7 object-contain" loading="lazy" /> : <StatusDot online={node.online} />}
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-[18px] font-[760] tracking-[-0.03em]" title={displayName(node)}>
               {displayName(node)}
             </div>
-            <div className="mt-0.5 text-xs font-semibold text-slate-400">{virt || '—'}</div>
+            <div className="mt-0.5 text-xs font-semibold text-muted-foreground dark:text-slate-400">{virt || '—'}</div>
           </div>
           <Flag code={node.meta?.region} className="h-4 w-6 shrink-0 rounded-[2px]" />
         </div>
 
-        <div className="mt-[15px] rounded-[14px] border border-white/[0.075] bg-black/15 p-3 text-[13px] leading-snug text-slate-200">
+        <div className="mt-[15px] rounded-[14px] border border-border bg-accent/70 p-3 text-[13px] leading-snug text-foreground/80 dark:border-white/[0.075] dark:bg-black/15 dark:text-slate-200">
           <div className="truncate">{os || 'Unknown system'}</div>
           {specs.cpuDetail && (
-            <div className="mt-1 truncate font-mono text-[11px] font-semibold text-slate-500" title={specs.cpuDetail}>
+            <div className="mt-1 truncate font-mono text-[11px] font-semibold text-muted-foreground dark:text-slate-500" title={specs.cpuDetail}>
               CPU {specs.cpuDetail}
             </div>
           )}
@@ -67,9 +68,9 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
         <TcpBlock stats={tcpStats} />
 
         <div className="mt-3">
-          <div className="mb-1.5 flex items-center justify-between text-xs text-slate-400">
+          <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground dark:text-slate-400">
             <span>24h 在线</span>
-            <span className="font-mono text-slate-200">
+            <span className="font-mono text-foreground dark:text-slate-200">
               {onlineHistory?.percent == null ? '—' : `${onlineHistory.percent.toFixed(0)}%`}
             </span>
           </div>
@@ -78,7 +79,7 @@ export function NodeCard({ node, tcpStats = [], onlineHistory }: Props) {
 
         {hasCost(node.meta) && <CostLine meta={node.meta} />}
 
-        <div className="mt-3.5 flex items-center gap-2.5 text-xs text-slate-400">
+        <div className="mt-3.5 flex items-center gap-2.5 text-xs text-muted-foreground dark:text-slate-400">
           <span className="inline-flex items-center gap-1 font-mono">
             <Clock className="h-3 w-3" />
             {uptime(u.uptime)}
@@ -130,11 +131,11 @@ function UsageBlock({ label, spec, value, hot }: { label: string; spec?: string;
   const capped = Math.max(0, Math.min(100, safe ?? 0))
   const filled = safe == null ? 0 : Math.ceil(capped / 5)
   return (
-    <div className="min-w-0 rounded-[14px] border border-white/[0.075] bg-white/[0.025] p-2.5">
+    <div className="min-w-0 rounded-[14px] border border-border bg-muted/45 p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/[0.075] dark:bg-white/[0.025] dark:shadow-none">
       <div className="mb-2 flex items-baseline justify-between gap-1.5">
-        <span className="min-w-0 truncate text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-400" title={spec ? `${label} ${spec}` : label}>
+        <span className="min-w-0 truncate text-[11px] font-extrabold uppercase tracking-[0.08em] text-muted-foreground dark:text-slate-400" title={spec ? `${label} ${spec}` : label}>
           {label}
-          {spec && <span className="ml-1 font-mono text-[10px] normal-case tracking-normal text-slate-500">({spec})</span>}
+          {spec && <span className="ml-1 font-mono text-[10px] normal-case tracking-normal text-muted-foreground dark:text-slate-500">({spec})</span>}
         </span>
         <span className={cn('shrink-0 font-mono text-[13px] font-bold', hot && safe != null && safe >= 90 ? 'text-rose-400' : 'text-cyan-300')}>
           {pct(safe)}
@@ -145,7 +146,7 @@ function UsageBlock({ label, spec, value, hot }: { label: string; spec?: string;
           <span
             key={i}
             className={cn(
-              'rounded-[2px] bg-white/[0.065]',
+              'rounded-[2px] bg-slate-200 dark:bg-white/[0.065]',
               i < filled && (hot && safe != null && safe >= 90 ? 'bg-gradient-to-b from-yellow-300 via-orange-400 to-red-500' : 'bg-gradient-to-b from-cyan-300 to-cyan-700'),
             )}
           />
@@ -158,8 +159,8 @@ function UsageBlock({ label, spec, value, hot }: { label: string; spec?: string;
 function NetBox({ dir, value }: { dir: 'down' | 'up'; value: string }) {
   const Icon = dir === 'down' ? ArrowDown : ArrowUp
   return (
-    <div className="rounded-[14px] border border-white/[0.075] bg-white/[0.024] p-3">
-      <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-400">
+    <div className="rounded-[14px] border border-border bg-muted/45 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/[0.075] dark:bg-white/[0.024] dark:shadow-none">
+      <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-muted-foreground dark:text-slate-400">
         <Icon className="h-3 w-3" />
         {dir === 'down' ? 'DOWN' : 'UP'}
       </div>
@@ -182,15 +183,15 @@ function CostLine({ meta }: { meta: NodeMeta }) {
   return (
     <div
       className={cn(
-        'mt-2.5 flex min-w-0 items-center gap-2 text-xs text-slate-400',
+        'mt-2.5 flex min-w-0 items-center gap-2 text-xs text-muted-foreground dark:text-slate-400',
         days != null && days <= 7 && days >= 0 && '[&_.cost-days]:text-orange-400',
         days != null && days < 0 && '[&_.cost-days]:text-rose-400',
       )}
       title={meta.expireTime ? `expires ${meta.expireTime}` : undefined}
     >
-      <span className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">COST</span>
-      {price && <span className="font-mono font-extrabold text-blue-100">{price}</span>}
-      {price && daysText && <span className="text-white/[0.22]">·</span>}
+      <span className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground dark:text-slate-400">COST</span>
+      {price && <span className="font-mono font-extrabold text-blue-700 dark:text-blue-100">{price}</span>}
+      {price && daysText && <span className="text-slate-300 dark:text-white/[0.22]">·</span>}
       {daysText && <span className="cost-days font-mono font-extrabold text-emerald-400">{daysText}</span>}
     </div>
   )
@@ -199,15 +200,15 @@ function CostLine({ meta }: { meta: NodeMeta }) {
 function TcpBlock({ stats }: { stats: LatencyStats[] }) {
   const rows = stats.length ? stats : []
   return (
-    <div className="mt-3 rounded-2xl border border-white/[0.075] bg-black/15 p-[13px]">
+    <div className="mt-3 rounded-2xl border border-border bg-accent/70 p-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/[0.075] dark:bg-black/15 dark:shadow-none">
       <div className="mb-2.5 flex items-center justify-between">
-        <div className="text-xs font-black uppercase tracking-[0.1em] text-blue-100">TCPing</div>
+        <div className="text-xs font-black uppercase tracking-[0.1em] text-blue-700 dark:text-blue-100">TCPing</div>
         <div className="text-[10px] font-black tracking-[0.13em] text-emerald-400">LIVE</div>
       </div>
       {rows.length ? (
         rows.map(row => <TcpRow key={row.name} stat={row} />)
       ) : (
-        <div className="py-2 text-xs text-slate-500">暂无 TCPing 数据</div>
+        <div className="py-2 text-xs text-muted-foreground dark:text-slate-500">暂无 TCPing 数据</div>
       )}
     </div>
   )
@@ -218,14 +219,14 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
   const tone = latencyTone(latest)
   return (
     <div className="my-2 grid grid-cols-[72px_1fr_56px_32px] items-center gap-2">
-      <div className="truncate text-xs font-semibold text-slate-300" title={tcpDisplayName(stat.name)}>
+      <div className="truncate text-xs font-semibold text-foreground/75 dark:text-slate-300" title={tcpDisplayName(stat.name)}>
         {tcpDisplayName(stat.name)}
       </div>
       <TcpSparkline probes={stat.probes} />
       <div className={cn('text-right font-mono text-[13px] font-extrabold', tone)}>
         {latest == null ? '—' : `${latest.toFixed(0)}ms`}
       </div>
-      <div className="text-right font-mono text-[11px] font-bold text-slate-400">{stat.lossRate.toFixed(0)}%</div>
+      <div className="text-right font-mono text-[11px] font-bold text-muted-foreground dark:text-slate-400">{stat.lossRate.toFixed(0)}%</div>
     </div>
   )
 }
@@ -237,7 +238,7 @@ function TcpSparkline({ probes }: { probes: (number | null)[] }) {
   const values = Array.from({ length: 60 }, (_, i) => (i < offset ? null : probes[i - offset]))
   const numeric = values.filter((v): v is number => v != null)
   if (numeric.length < 2) {
-    return <div className="h-[26px] rounded-[2px] bg-white/[0.045]" />
+    return <div className="h-[26px] rounded-[2px] bg-muted dark:bg-white/[0.045]" />
   }
 
   const min = Math.min(20, ...numeric)
@@ -272,7 +273,7 @@ function TcpSparkline({ probes }: { probes: (number | null)[] }) {
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="h-[26px] w-full overflow-visible">
-      <line x1="0" y1="20" x2={width} y2="20" className="stroke-white/[0.075]" strokeWidth="1" />
+      <line x1="0" y1="20" x2={width} y2="20" className="stroke-border dark:stroke-white/[0.075]" strokeWidth="1" />
       {values.map((v, i) => {
         if (v != null) return null
         const x = (i / (values.length - 1)) * width
@@ -311,7 +312,7 @@ function HistoryStrip({ onlineHistory }: { onlineHistory?: OnlineHistory }) {
           key={i}
           title={hour.ratio == null ? `${i}:00 · no data` : `${i}:00 · ${hour.ratio.toFixed(0)}%`}
           className={cn(
-            'h-2.5 rounded-full bg-white/[0.07] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]',
+            'h-2.5 rounded-full bg-slate-200 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.035)] dark:bg-white/[0.07] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]',
             hour.ratio != null && hour.ratio >= 95 && 'bg-gradient-to-b from-green-300 to-green-600 shadow-[0_0_10px_rgba(52,211,153,0.12)]',
             hour.ratio != null && hour.ratio >= 70 && hour.ratio < 95 && 'bg-gradient-to-b from-yellow-300 to-orange-500 shadow-[0_0_10px_rgba(251,146,60,0.12)]',
             hour.ratio != null && hour.ratio < 70 && 'bg-gradient-to-b from-rose-300 to-red-600 shadow-[0_0_10px_rgba(251,113,133,0.12)]',
