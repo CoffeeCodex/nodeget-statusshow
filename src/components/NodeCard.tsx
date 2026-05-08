@@ -82,15 +82,22 @@ export function NodeCard({ node, tcpStats = [], agentHistory }: Props) {
         <div className="mt-3.5 flex items-center gap-2.5 text-xs text-muted-foreground dark:text-slate-400">
           <span className="inline-flex items-center gap-1 font-mono">
             <Clock className="h-3 w-3" />
-            {uptime(u.uptime)}
+            {formatUptimeCn(u.uptime)}
           </span>
           <span className={cn('ml-auto text-[11px] font-black tracking-[0.11em]', node.online ? 'text-emerald-400' : 'text-rose-400')}>
-            {node.online ? 'ONLINE' : 'OFFLINE'}
+            {node.online ? '在线' : '离线'}
           </span>
         </div>
       </article>
     </a>
   )
+}
+
+
+function formatUptimeCn(value?: number) {
+  const text = uptime(value)
+  if (text === '—') return '运行时间 —'
+  return `运行 ${text.replace(/d/g, ' 天').replace(/h/g, ' 小时').replace(/m/g, ' 分钟').replace(/s/g, ' 秒')}`
 }
 
 function nodeSpecs(node: Node, usage: ReturnType<typeof deriveUsage>) {
@@ -194,7 +201,7 @@ function NetBox({ dir, value }: { dir: 'down' | 'up'; value: string }) {
     <div className="rounded-[14px] border border-border bg-muted/45 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/[0.075] dark:bg-white/[0.024] dark:shadow-none">
       <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-muted-foreground dark:text-slate-400">
         <Icon className="h-3 w-3" />
-        {dir === 'down' ? 'DOWN' : 'UP'}
+        {dir === 'down' ? '下行' : '上行'}
       </div>
       <div className="mt-1 font-mono text-[17px] font-bold">{value}</div>
     </div>
@@ -207,9 +214,9 @@ function CostLine({ meta }: { meta: NodeMeta }) {
   const price = meta.price > 0 ? `${unit}${meta.price.toFixed(2)} / ${meta.priceCycle}d` : null
   let daysText: string | null = null
   if (days != null) {
-    if (days < 0) daysText = 'expired'
-    else if (days === 0) daysText = 'expires today'
-    else daysText = `${days}d left`
+    if (days < 0) daysText = '已过期'
+    else if (days === 0) daysText = '今日到期'
+    else daysText = `剩余 ${days} 天`
   }
 
   return (
@@ -221,7 +228,7 @@ function CostLine({ meta }: { meta: NodeMeta }) {
       )}
       title={meta.expireTime ? `expires ${meta.expireTime}` : undefined}
     >
-      <span className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground dark:text-slate-400">COST</span>
+      <span className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground dark:text-slate-400">费用</span>
       {price && <span className="font-mono font-extrabold text-blue-700 dark:text-blue-100">{price}</span>}
       {price && daysText && <span className="text-slate-300 dark:text-white/[0.22]">·</span>}
       {daysText && <span className="cost-days font-mono font-extrabold text-emerald-400">{daysText}</span>}
@@ -234,13 +241,13 @@ function TcpBlock({ stats }: { stats: LatencyStats[] }) {
   return (
     <div className="mt-3 rounded-2xl border border-border bg-accent/70 p-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/[0.075] dark:bg-black/15 dark:shadow-none">
       <div className="mb-2.5 flex items-center justify-between">
-        <div className="text-xs font-black uppercase tracking-[0.1em] text-blue-700 dark:text-blue-100">TCPing</div>
+        <div className="text-xs font-black uppercase tracking-[0.1em] text-blue-700 dark:text-blue-100">三网延迟</div>
         <div className="text-[10px] font-black tracking-[0.13em] text-emerald-400">LIVE</div>
       </div>
       {rows.length ? (
         rows.map(row => <TcpRow key={row.name} stat={row} />)
       ) : (
-        <div className="py-2 text-xs text-muted-foreground dark:text-slate-500">暂无 TCPing 数据</div>
+        <div className="py-2 text-xs text-muted-foreground dark:text-slate-500">暂无三网延迟数据</div>
       )}
     </div>
   )
