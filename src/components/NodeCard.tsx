@@ -61,8 +61,8 @@ export function NodeCard({ node, tcpStats = [], agentHistory }: Props) {
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2.5">
-          <NetBox dir="down" value={`${bytes(u.netIn || 0)}/s`} />
-          <NetBox dir="up" value={`${bytes(u.netOut || 0)}/s`} />
+          <NetBox dir="down" value={`${bytes(u.netIn || 0)}/s`} total={u.netInTotal} />
+          <NetBox dir="up" value={`${bytes(u.netOut || 0)}/s`} total={u.netOutTotal} />
         </div>
 
         <TcpBlock stats={tcpStats} />
@@ -195,7 +195,7 @@ function UsageBlock({ label, spec, value, hot }: { label: string; spec?: string;
   )
 }
 
-function NetBox({ dir, value }: { dir: 'down' | 'up'; value: string }) {
+function NetBox({ dir, value, total }: { dir: 'down' | 'up'; value: string; total?: number | null }) {
   const Icon = dir === 'down' ? ArrowDown : ArrowUp
   return (
     <div className="rounded-[14px] border border-border bg-muted/45 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/[0.075] dark:bg-white/[0.024] dark:shadow-none">
@@ -204,6 +204,15 @@ function NetBox({ dir, value }: { dir: 'down' | 'up'; value: string }) {
         {dir === 'down' ? '下行' : '上行'}
       </div>
       <div className="mt-1 font-mono text-[17px] font-bold">{value}</div>
+      <div
+        className={cn(
+          'mt-1.5 inline-flex rounded-full px-2 py-0.5 font-mono text-[10px] font-extrabold',
+          dir === 'down' ? 'bg-cyan-400/10 text-cyan-300' : 'bg-amber-400/10 text-amber-300',
+        )}
+        title={dir === 'down' ? '累计接收流量' : '累计发送流量'}
+      >
+        累计 {bytes(total || 0)}
+      </div>
     </div>
   )
 }

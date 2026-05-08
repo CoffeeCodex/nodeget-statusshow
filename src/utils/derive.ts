@@ -16,6 +16,8 @@ export function deriveUsage(node: Node): Usage {
     diskTotal,
     netIn: d?.receive_speed,
     netOut: d?.transmit_speed,
+    netInTotal: d?.total_received,
+    netOutTotal: d?.total_transmitted,
     uptime: d?.uptime,
     ts: d?.timestamp,
   }
