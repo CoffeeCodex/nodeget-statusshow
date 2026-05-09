@@ -72,9 +72,9 @@ export function NodeCard({ node, tcpStats = [], agentHistory }: Props) {
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-[9px]">
-          <UsagePie label="CPU" spec={specs.cpu} value={u.cpu} hot />
-          <UsagePie label="MEM" spec={specs.mem} value={u.mem} />
-          <UsagePie label="DISK" spec={specs.disk} value={u.disk} />
+          <UsagePie label="处理器" spec={specs.cpu} value={u.cpu} hot />
+          <UsagePie label="内存" spec={specs.mem} value={u.mem} />
+          <UsagePie label="硬盘" spec={specs.disk} value={u.disk} />
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2.5">
