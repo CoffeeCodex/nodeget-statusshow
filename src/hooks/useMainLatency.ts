@@ -77,7 +77,7 @@ export function useMainLatency(pool: BackendPool | null, nodes: Node[]) {
   const tcpByUuid = useMemo<TcpSummaryByUuid>(() => {
     const out: TcpSummaryByUuid = {}
     for (const [uuid, rows] of Object.entries(tcpRowsByUuid)) {
-      out[uuid] = computeLatencyStats(rows, 'tcp_ping').slice(0, 3)
+      out[uuid] = computeLatencyStats(rows, 'tcp_ping', { fixedCarrierOrder: true }).slice(0, 3)
     }
     return out
   }, [tcpRowsByUuid])

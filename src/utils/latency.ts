@@ -100,8 +100,13 @@ export interface AgentHistory {
   percent: number | null
 }
 
-export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType): LatencyStats[] {
-  const stats = seriesNames(rows).map<LatencyStats>(name => {
+export function computeLatencyStats(
+  rows: TaskQueryResult[],
+  type: LatencyType,
+  options: { fixedCarrierOrder?: boolean } = {},
+): LatencyStats[] {
+  const names = options.fixedCarrierOrder ? sortCarrierNames(seriesNames(rows)) : seriesNames(rows)
+  const stats = names.map<LatencyStats>(name => {
     const list = rows.filter(r => (r.cron_source || '未知') === name)
     const vals: number[] = []
     for (const r of list) {
@@ -134,6 +139,8 @@ export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType):
     return { name, color, avg, jitter, lossRate, latest, probes }
   })
 
+  if (options.fixedCarrierOrder) return stats
+
   return stats.sort((a, b) => {
     const av = a.avg ?? Infinity
     const bv = b.avg ?? Infinity
@@ -143,6 +150,22 @@ export function computeLatencyStats(rows: TaskQueryResult[], type: LatencyType):
     if (aj !== bj) return aj - bj
     return a.lossRate - b.lossRate
   })
+}
+
+function sortCarrierNames(names: string[]) {
+  const order = ['电信', '联通', '移动']
+  return names.slice().sort((a, b) => {
+    const ai = carrierRank(a, order)
+    const bi = carrierRank(b, order)
+    if (ai !== bi) return ai - bi
+    return a.localeCompare(b)
+  })
+}
+
+function carrierRank(name: string, order: string[]) {
+  const display = name.replace(/^tcping[-_\s]*/i, '')
+  const idx = order.findIndex(carrier => display.includes(carrier))
+  return idx === -1 ? order.length : idx
 }
 
 export function computeAgentHistory(history: { t: number }[], online: boolean, now = Date.now()): AgentHistory {
