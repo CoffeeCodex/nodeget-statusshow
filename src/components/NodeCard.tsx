@@ -38,31 +38,32 @@ export function NodeCard({ node, tcpStats = [], agentHistory }: Props) {
             {logo ? <img src={logo} alt="" className="h-7 w-7 object-contain" loading="lazy" /> : <StatusDot online={node.online} />}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-              <span className="truncate text-[18px] font-[760] tracking-[-0.03em]" title={displayName(node)}>
-                {displayName(node)}
-              </span>
-              {tags.slice(0, 3).map(tag => (
-                <span
-                  key={tag}
-                  className="max-w-[92px] truncate rounded-full border border-sky-200/70 bg-sky-50 px-1.5 py-[1px] text-[10px] font-bold leading-4 text-sky-700 dark:border-cyan-300/15 dark:bg-cyan-300/10 dark:text-cyan-200"
-                  title={tag}
-                >
-                  {tag}
-                </span>
-              ))}
-              {tags.length > 3 && (
-                <span className="rounded-full border border-border bg-muted px-1.5 py-[1px] text-[10px] font-bold leading-4 text-muted-foreground dark:border-white/[0.075] dark:bg-white/[0.04] dark:text-slate-400">
-                  +{tags.length - 3}
-                </span>
-              )}
+            <div className="truncate text-[18px] font-[760] tracking-[-0.03em]" title={displayName(node)}>
+              {displayName(node)}
             </div>
             <div className="mt-0.5 text-xs font-semibold text-muted-foreground dark:text-slate-400">{virt || '—'}</div>
           </div>
           <Flag code={node.meta?.region} className="h-4 w-6 shrink-0 rounded-[2px]" />
         </div>
 
-        <div className="mt-[15px] rounded-[14px] border border-border bg-accent/70 p-3 text-[13px] leading-snug text-foreground/80 dark:border-white/[0.075] dark:bg-black/15 dark:text-slate-200">
+        <div className={cn('mt-2 flex h-6 items-center gap-1.5 overflow-hidden', !tags.length && 'opacity-0')}>
+          {tags.slice(0, 3).map(tag => (
+            <span
+              key={tag}
+              className="max-w-[92px] truncate rounded-full border border-sky-200/70 bg-sky-50 px-1.5 py-[1px] text-[10px] font-bold leading-4 text-sky-700 dark:border-cyan-300/15 dark:bg-cyan-300/10 dark:text-cyan-200"
+              title={tag}
+            >
+              {tag}
+            </span>
+          ))}
+          {tags.length > 3 && (
+            <span className="rounded-full border border-border bg-muted px-1.5 py-[1px] text-[10px] font-bold leading-4 text-muted-foreground dark:border-white/[0.075] dark:bg-white/[0.04] dark:text-slate-400">
+              +{tags.length - 3}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-2 rounded-[14px] border border-border bg-accent/70 p-3 text-[13px] leading-snug text-foreground/80 dark:border-white/[0.075] dark:bg-black/15 dark:text-slate-200">
           <div className="truncate">{os || 'Unknown system'}</div>
           {specs.cpuDetail && (
             <div className="mt-1 truncate font-mono text-[11px] font-semibold text-muted-foreground dark:text-slate-500" title={specs.cpuDetail}>
