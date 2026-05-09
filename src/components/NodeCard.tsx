@@ -371,13 +371,13 @@ function latencyTone(v: number | null) {
 function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
   const slots = agentHistory?.slots ?? Array.from({ length: 24 }, () => ({ active: false as const, t: null as number | null, successRate: null }))
   return (
-    <div className="grid h-5 grid-cols-[repeat(24,minmax(0,1fr))] items-stretch gap-[2px] overflow-hidden">
-      {slots.map((slot, i) => (
+    <div className="flex h-5 items-center justify-between gap-[3px] overflow-hidden">
+      {slots.slice(0, 24).map((slot, i) => (
         <span
           key={i}
           title={agentTitle(slot)}
           className={cn(
-            'rounded-[2px] bg-slate-200 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.035)] dark:bg-white/[0.07] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]',
+            'h-2 w-2 shrink-0 rounded-full bg-slate-200 shadow-[0_0_0_1px_rgba(15,23,42,0.035)] dark:bg-white/[0.08] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)]',
             pingSlotTone(slot.successRate),
           )}
         />
