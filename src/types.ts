@@ -95,7 +95,7 @@ export interface SiteConfig {
   "author"?: string
   "repository"?: string
   "dist_page"?: string;
-  "theme_config":{
+  "user_preferences":{
     site_name?: string
     site_logo?: string
     footer?: string
@@ -105,7 +105,7 @@ export interface SiteConfig {
     backend_url: string; 
     token: string 
   }[]
-  "version": string
+  "version"?: string
   "license"?: string
 }
 
