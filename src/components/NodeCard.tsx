@@ -376,15 +376,17 @@ function latencyTone(v: number | null) {
 
 function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
   const slots = agentHistory?.slots ?? Array.from({ length: 24 }, () => ({ active: false as const, t: null as number | null, successRate: null }))
+  const segments = Array.from({ length: 12 }, (_, i) => slots.slice(i * 2, i * 2 + 2))
+
   return (
-    <div className="flex h-5 items-center justify-between gap-[3px] overflow-hidden">
-      {slots.slice(0, 24).map((slot, i) => (
+    <div className="flex h-5 items-center gap-[3px] overflow-hidden">
+      {segments.map((segment, i) => (
         <span
           key={i}
-          title={agentTitle(slot)}
+          title={segment.map(agentTitle).join('\n')}
           className={cn(
-            'h-2 w-2 shrink-0 rounded-full bg-slate-200 shadow-[0_0_0_1px_rgba(15,23,42,0.035)] dark:bg-white/[0.08] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.04)]',
-            pingSlotTone(slot.successRate),
+            'h-1 flex-1 rounded-full bg-slate-200 dark:bg-white/[0.08]',
+            agentSegmentTone(segment),
           )}
         />
       ))}
@@ -392,11 +394,13 @@ function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
   )
 }
 
-function pingSlotTone(successRate?: number | null) {
-  if (successRate == null) return ''
-  if (successRate >= 95) return 'bg-gradient-to-b from-emerald-300 to-emerald-600 shadow-[0_0_10px_rgba(52,211,153,0.12)]'
-  if (successRate >= 70) return 'bg-gradient-to-b from-orange-300 to-orange-600 shadow-[0_0_10px_rgba(251,146,60,0.12)]'
-  return 'bg-gradient-to-b from-rose-300 to-rose-600 shadow-[0_0_10px_rgba(251,113,133,0.12)]'
+function agentSegmentTone(segment: AgentHistory['slots']) {
+  const rates = segment.map(slot => slot.successRate).filter((rate): rate is number => rate != null)
+  if (!rates.length) return ''
+  const avg = rates.reduce((sum, rate) => sum + rate, 0) / rates.length
+  if (avg >= 95) return 'bg-[#2ee6a8] dark:bg-[#2ee6a8]'
+  if (avg >= 70) return 'bg-orange-400 dark:bg-orange-400'
+  return 'bg-rose-400 dark:bg-rose-400'
 }
 
 function agentTitle(slot: AgentHistory['slots'][number]) {
