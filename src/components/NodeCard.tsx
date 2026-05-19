@@ -303,22 +303,57 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
 }
 
 function TcpSparkline({ probes }: { probes: (number | null)[] }) {
-  const offset = Math.max(0, 30 - probes.length)
-  const values = Array.from({ length: 30 }, (_, i) => (i < offset ? null : probes[i - offset]))
+  const width = 180
+  const height = 26
+  const offset = Math.max(0, 60 - probes.length)
+  const values = Array.from({ length: 60 }, (_, i) => (i < offset ? null : probes[i - offset]))
+  const numeric = values.filter((v): v is number => v != null)
+  if (numeric.length < 2) {
+    return <div className="h-[26px] rounded-[2px] bg-muted dark:bg-white/[0.045]" />
+  }
+
+  const min = Math.min(20, ...numeric)
+  const max = Math.max(220, ...numeric)
+  const points = values.map((v, i) => {
+    if (v == null) return null
+    const x = (i / (values.length - 1)) * width
+    const y = height - 4 - ((v - min) / (max - min || 1)) * (height - 8)
+    return { x, y, v }
+  })
+
+  const paths: { d: string; tone: string }[] = []
+  let segment: NonNullable<(typeof points)[number]>[] = []
+  const flush = () => {
+    if (segment.length < 2) {
+      segment = []
+      return
+    }
+    const avg = segment.reduce((sum, p) => sum + p.v, 0) / segment.length
+    paths.push({
+      tone: latencyStroke(avg),
+      d: segment.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' '),
+    })
+    segment = []
+  }
+
+  points.forEach(point => {
+    if (!point) flush()
+    else segment.push(point)
+  })
+  flush()
 
   return (
-    <div className="grid h-[26px] grid-cols-[repeat(30,minmax(2px,1fr))] items-center gap-[3px] overflow-hidden rounded-[3px] bg-slate-950/5 px-1 dark:bg-black/10">
-      {values.map((value, i) => (
-        <span
-          key={i}
-          className={cn(
-            'h-[18px] rounded-full',
-            latencyBarTone(value),
-          )}
-          title={value == null ? 'timeout' : `${value.toFixed(0)}ms`}
-        />
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-[26px] w-full overflow-visible">
+      <line x1="0" y1="20" x2={width} y2="20" className="stroke-border dark:stroke-white/[0.075]" strokeWidth="1" />
+      {values.map((v, i) => {
+        if (v != null) return null
+        const x = (i / (values.length - 1)) * width
+        return <line key={i} x1={x} x2={x} y1="4" y2={height - 3} className="stroke-rose-400" strokeWidth="1.7" opacity="0.9" />
+      })}
+      {paths.map((path, i) => (
+        <path key={i} d={path.d} className={path.tone} fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       ))}
-    </div>
+    </svg>
   )
 }
 
@@ -326,12 +361,10 @@ function tcpDisplayName(name: string) {
   return name.replace(/^tcping[-_\s]*/i, '') || name
 }
 
-function latencyBarTone(v: number | null) {
-  if (v == null) return 'bg-rose-400/85'
-  if (v <= 60) return 'bg-[#2ee6a8]'
-  if (v <= 120) return 'bg-lime-400'
-  if (v <= 200) return 'bg-amber-400'
-  return 'bg-rose-400'
+function latencyStroke(v: number) {
+  if (v <= 80) return 'stroke-emerald-400'
+  if (v <= 180) return 'stroke-orange-400'
+  return 'stroke-rose-400'
 }
 
 function latencyTone(v: number | null) {
@@ -343,16 +376,17 @@ function latencyTone(v: number | null) {
 
 function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
   const slots = agentHistory?.slots ?? Array.from({ length: 24 }, () => ({ active: false as const, t: null as number | null, successRate: null }))
+  const segments = Array.from({ length: 12 }, (_, i) => slots.slice(i * 2, i * 2 + 2))
 
   return (
     <div className="flex h-5 items-center gap-[3px] overflow-hidden">
-      {slots.slice(0, 24).map((slot, i) => (
+      {segments.map((segment, i) => (
         <span
           key={i}
-          title={agentTitle(slot)}
+          title={segment.map(agentTitle).join('\n')}
           className={cn(
             'h-1 flex-1 rounded-full bg-slate-200 dark:bg-white/[0.08]',
-            agentSegmentTone(slot.successRate),
+            agentSegmentTone(segment),
           )}
         />
       ))}
@@ -360,10 +394,12 @@ function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
   )
 }
 
-function agentSegmentTone(successRate?: number | null) {
-  if (successRate == null) return ''
-  if (successRate >= 95) return 'bg-[#2ee6a8] dark:bg-[#2ee6a8]'
-  if (successRate >= 70) return 'bg-orange-400 dark:bg-orange-400'
+function agentSegmentTone(segment: AgentHistory['slots']) {
+  const rates = segment.map(slot => slot.successRate).filter((rate): rate is number => rate != null)
+  if (!rates.length) return ''
+  const avg = rates.reduce((sum, rate) => sum + rate, 0) / rates.length
+  if (avg >= 95) return 'bg-[#2ee6a8] dark:bg-[#2ee6a8]'
+  if (avg >= 70) return 'bg-orange-400 dark:bg-orange-400'
   return 'bg-rose-400 dark:bg-rose-400'
 }
 
