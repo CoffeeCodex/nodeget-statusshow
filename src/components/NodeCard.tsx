@@ -303,57 +303,22 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
 }
 
 function TcpSparkline({ probes }: { probes: (number | null)[] }) {
-  const width = 180
-  const height = 26
-  const offset = Math.max(0, 60 - probes.length)
-  const values = Array.from({ length: 60 }, (_, i) => (i < offset ? null : probes[i - offset]))
-  const numeric = values.filter((v): v is number => v != null)
-  if (numeric.length < 2) {
-    return <div className="h-[26px] rounded-[2px] bg-muted dark:bg-white/[0.045]" />
-  }
-
-  const min = Math.min(20, ...numeric)
-  const max = Math.max(220, ...numeric)
-  const points = values.map((v, i) => {
-    if (v == null) return null
-    const x = (i / (values.length - 1)) * width
-    const y = height - 4 - ((v - min) / (max - min || 1)) * (height - 8)
-    return { x, y, v }
-  })
-
-  const paths: { d: string; tone: string }[] = []
-  let segment: NonNullable<(typeof points)[number]>[] = []
-  const flush = () => {
-    if (segment.length < 2) {
-      segment = []
-      return
-    }
-    const avg = segment.reduce((sum, p) => sum + p.v, 0) / segment.length
-    paths.push({
-      tone: latencyStroke(avg),
-      d: segment.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' '),
-    })
-    segment = []
-  }
-
-  points.forEach(point => {
-    if (!point) flush()
-    else segment.push(point)
-  })
-  flush()
+  const offset = Math.max(0, 30 - probes.length)
+  const values = Array.from({ length: 30 }, (_, i) => (i < offset ? null : probes[i - offset]))
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-[26px] w-full overflow-visible">
-      <line x1="0" y1="20" x2={width} y2="20" className="stroke-border dark:stroke-white/[0.075]" strokeWidth="1" />
-      {values.map((v, i) => {
-        if (v != null) return null
-        const x = (i / (values.length - 1)) * width
-        return <line key={i} x1={x} x2={x} y1="4" y2={height - 3} className="stroke-rose-400" strokeWidth="1.7" opacity="0.9" />
-      })}
-      {paths.map((path, i) => (
-        <path key={i} d={path.d} className={path.tone} fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    <div className="grid h-[26px] grid-cols-[repeat(30,minmax(2px,1fr))] items-center gap-[3px] overflow-hidden rounded-[3px] bg-slate-950/5 px-1 dark:bg-black/10">
+      {values.map((value, i) => (
+        <span
+          key={i}
+          className={cn(
+            'h-[18px] rounded-full',
+            latencyBarTone(value),
+          )}
+          title={value == null ? 'timeout' : `${value.toFixed(0)}ms`}
+        />
       ))}
-    </svg>
+    </div>
   )
 }
 
@@ -361,10 +326,12 @@ function tcpDisplayName(name: string) {
   return name.replace(/^tcping[-_\s]*/i, '') || name
 }
 
-function latencyStroke(v: number) {
-  if (v <= 80) return 'stroke-emerald-400'
-  if (v <= 180) return 'stroke-orange-400'
-  return 'stroke-rose-400'
+function latencyBarTone(v: number | null) {
+  if (v == null) return 'bg-rose-400/85'
+  if (v <= 60) return 'bg-[#2ee6a8]'
+  if (v <= 120) return 'bg-lime-400'
+  if (v <= 200) return 'bg-amber-400'
+  return 'bg-rose-400'
 }
 
 function latencyTone(v: number | null) {
