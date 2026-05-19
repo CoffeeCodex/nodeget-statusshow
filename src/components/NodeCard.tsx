@@ -293,7 +293,7 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
       <div className="truncate text-xs font-semibold text-foreground/75 dark:text-slate-300" title={tcpDisplayName(stat.name)}>
         {tcpDisplayName(stat.name)}
       </div>
-      <TcpSparkline probes={stat.probes} />
+      <TcpSparkline probes={stat.hourlyProbes ?? stat.probes} />
       <div className={cn('text-right font-mono text-[13px] font-extrabold', tone)}>
         {latest == null ? '—' : `${latest.toFixed(0)}ms`}
       </div>
@@ -303,11 +303,11 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
 }
 
 function TcpSparkline({ probes }: { probes: (number | null)[] }) {
-  const offset = Math.max(0, 30 - probes.length)
-  const values = Array.from({ length: 30 }, (_, i) => (i < offset ? null : probes[i - offset]))
+  const offset = Math.max(0, 24 - probes.length)
+  const values = Array.from({ length: 24 }, (_, i) => (i < offset ? null : probes[i - offset]))
 
   return (
-    <div className="grid h-[26px] grid-cols-[repeat(30,minmax(2px,1fr))] items-center gap-[3px] overflow-hidden rounded-[3px] bg-slate-950/5 px-1 dark:bg-black/10">
+    <div className="grid h-[26px] grid-cols-[repeat(24,minmax(2px,1fr))] items-center gap-[3px] overflow-hidden rounded-[3px] bg-slate-950/5 px-1 dark:bg-black/10">
       {values.map((value, i) => (
         <span
           key={i}

@@ -83,6 +83,7 @@ export interface LatencyStats {
   lossRate: number
   latest: number | null
   probes: (number | null)[]
+  hourlyProbes?: (number | null)[]
 }
 
 export interface AgentSlot {
@@ -115,13 +116,11 @@ export function computeLatencyStats(
     }
 
     const color = latencyColor(name)
-    const probes = list
-      .slice()
-      .sort((a, b) => a.timestamp - b.timestamp)
-      .slice(-60)
-      .map(r => pickValue(r, type))
+    const ordered = list.slice().sort((a, b) => a.timestamp - b.timestamp)
+    const probes = ordered.slice(-60).map(r => pickValue(r, type))
+    const hourlyProbes = buildHourlyLatencyProbes(ordered, type)
     const lossRate = list.length ? ((list.length - vals.length) / list.length) * 100 : 0
-    if (!vals.length) return { name, color, avg: null, jitter: null, lossRate, latest: null, probes }
+    if (!vals.length) return { name, color, avg: null, jitter: null, lossRate, latest: null, probes, hourlyProbes }
 
     const avg = vals.reduce((s, v) => s + v, 0) / vals.length
     const jitter =
@@ -136,7 +135,7 @@ export function computeLatencyStats(
       }
     }
 
-    return { name, color, avg, jitter, lossRate, latest, probes }
+    return { name, color, avg, jitter, lossRate, latest, probes, hourlyProbes }
   })
 
   if (options.fixedCarrierOrder) return stats
@@ -149,6 +148,21 @@ export function computeLatencyStats(
     const bj = b.jitter ?? Infinity
     if (aj !== bj) return aj - bj
     return a.lossRate - b.lossRate
+  })
+}
+
+function buildHourlyLatencyProbes(rows: TaskQueryResult[], type: LatencyType) {
+  const now = Date.now()
+  const hour = 60 * 60 * 1000
+  return Array.from({ length: 24 }, (_, i) => {
+    const start = now - (24 - i) * hour
+    const end = start + hour
+    const vals = rows
+      .filter(r => r.timestamp >= start && r.timestamp < end)
+      .map(r => pickValue(r, type))
+      .filter((v): v is number => v != null)
+    if (!vals.length) return null
+    return vals.reduce((sum, v) => sum + v, 0) / vals.length
   })
 }
 
