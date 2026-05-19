@@ -102,9 +102,14 @@ export function NodeCard({ node, tcpStats = [], agentHistory }: Props) {
             <Clock className="h-3 w-3" />
             {formatUptimeCn(u.uptime)}
           </span>
-          <span className={cn('ml-auto text-[11px] font-black tracking-[0.11em]', node.online ? 'text-emerald-400' : 'text-rose-400')}>
-            {node.online ? 'connected' : 'disconnected'}
-          </span>
+          <span
+            className={cn(
+              'ml-auto h-2.5 w-2.5 rounded-full shadow-[0_0_0_3px_rgba(148,163,184,0.12)]',
+              node.online ? 'bg-emerald-400 shadow-emerald-400/25' : 'bg-rose-400 shadow-rose-400/25',
+            )}
+            title={node.online ? '在线' : '不在线'}
+            aria-label={node.online ? '在线' : '不在线'}
+          />
         </div>
       </article>
     </a>
