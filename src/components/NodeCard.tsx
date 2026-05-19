@@ -103,7 +103,7 @@ export function NodeCard({ node, tcpStats = [], agentHistory }: Props) {
             {formatUptimeCn(u.uptime)}
           </span>
           <span className={cn('ml-auto text-[11px] font-black tracking-[0.11em]', node.online ? 'text-emerald-400' : 'text-rose-400')}>
-            {node.online ? '在线' : '离线'}
+            {node.online ? 'connected' : 'disconnected'}
           </span>
         </div>
       </article>
@@ -269,7 +269,7 @@ function TcpBlock({ stats }: { stats: LatencyStats[] }) {
     <div className="mt-3 rounded-2xl border border-border bg-accent/70 p-[13px] shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/[0.075] dark:bg-black/15 dark:shadow-none">
       <div className="mb-2.5 flex items-center justify-between">
         <div className="text-xs font-black uppercase tracking-[0.1em] text-blue-700 dark:text-blue-100">三网延迟</div>
-        <div className="text-[10px] font-black tracking-[0.13em] text-emerald-400">LIVE</div>
+        <div className="text-[10px] font-black tracking-[0.13em] text-muted-foreground dark:text-slate-400">丢包率</div>
       </div>
       {rows.length ? (
         rows.map(row => <TcpRow key={row.name} stat={row} />)
