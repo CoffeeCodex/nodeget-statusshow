@@ -293,7 +293,7 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
       <div className="truncate text-xs font-semibold text-foreground/75 dark:text-slate-300" title={tcpDisplayName(stat.name)}>
         {tcpDisplayName(stat.name)}
       </div>
-      <TcpSparkline probes={stat.probes} />
+      <TcpSparkline probes={stat.hourlyProbes ?? stat.probes} />
       <div className={cn('text-right font-mono text-[13px] font-extrabold', tone)}>
         {latest == null ? '—' : `${latest.toFixed(0)}ms`}
       </div>
@@ -305,8 +305,8 @@ function TcpRow({ stat }: { stat: LatencyStats }) {
 function TcpSparkline({ probes }: { probes: (number | null)[] }) {
   const width = 180
   const height = 26
-  const offset = Math.max(0, 60 - probes.length)
-  const values = Array.from({ length: 60 }, (_, i) => (i < offset ? null : probes[i - offset]))
+  const offset = Math.max(0, 24 - probes.length)
+  const values = Array.from({ length: 24 }, (_, i) => (i < offset ? null : probes[i - offset]))
   const numeric = values.filter((v): v is number => v != null)
   if (numeric.length < 2) {
     return <div className="h-[26px] rounded-[2px] bg-muted dark:bg-white/[0.045]" />
