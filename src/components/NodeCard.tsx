@@ -343,17 +343,16 @@ function latencyTone(v: number | null) {
 
 function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
   const slots = agentHistory?.slots ?? Array.from({ length: 24 }, () => ({ active: false as const, t: null as number | null, successRate: null }))
-  const segments = Array.from({ length: 12 }, (_, i) => slots.slice(i * 2, i * 2 + 2))
 
   return (
     <div className="flex h-5 items-center gap-[3px] overflow-hidden">
-      {segments.map((segment, i) => (
+      {slots.slice(0, 24).map((slot, i) => (
         <span
           key={i}
-          title={segment.map(agentTitle).join('\n')}
+          title={agentTitle(slot)}
           className={cn(
             'h-1 flex-1 rounded-full bg-slate-200 dark:bg-white/[0.08]',
-            agentSegmentTone(segment),
+            agentSegmentTone(slot.successRate),
           )}
         />
       ))}
@@ -361,12 +360,10 @@ function AgentHistoryStrip({ agentHistory }: { agentHistory?: AgentHistory }) {
   )
 }
 
-function agentSegmentTone(segment: AgentHistory['slots']) {
-  const rates = segment.map(slot => slot.successRate).filter((rate): rate is number => rate != null)
-  if (!rates.length) return ''
-  const avg = rates.reduce((sum, rate) => sum + rate, 0) / rates.length
-  if (avg >= 95) return 'bg-[#2ee6a8] dark:bg-[#2ee6a8]'
-  if (avg >= 70) return 'bg-orange-400 dark:bg-orange-400'
+function agentSegmentTone(successRate?: number | null) {
+  if (successRate == null) return ''
+  if (successRate >= 95) return 'bg-[#2ee6a8] dark:bg-[#2ee6a8]'
+  if (successRate >= 70) return 'bg-orange-400 dark:bg-orange-400'
   return 'bg-rose-400 dark:bg-rose-400'
 }
 
